@@ -679,43 +679,111 @@
       updateKeranjangUI();
     }
 
-    function prosesBayar() {
-      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+    // Simpan referensi device bluetooth yang terhubung
+let bluetoothDevice = null;
+let bluetoothCharacteristic = null;
 
-      if (keranjang.length === 0) {
-        alert("⚠️ Belum ada item di dalam keranjang!");
-        return;
-      }
-      if (bayar < total) {
-        alert("⚠️ Nominal pembayaran masih kurang!");
-        return;
-      }
+// Fungsi untuk menghubungkan printer thermal via Bluetooth
+async function konekPrinterBluetooth() {
+  try {
+    showLoading(true, "Mencari Printer Bluetooth...");
+    bluetoothDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // UUID umum printer thermal ESC/POS
+    });
 
-      showLoading(true, "Menyimpan Transaksi ke Spreadsheet...");
+    const server = await bluetoothDevice.gatt.connect();
+    // Menggunakan service standar printer thermal
+    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+    bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+    
+    showLoading(false);
+    alert("✅ Printer Bluetooth Berhasil Terhubung!");
+  } catch (error) {
+    showLoading(false);
+    console.error("Gagal konek printer:", error);
+    alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
+  }
+}
 
-      const rincianItems = keranjang.map(i => `${i.nama} (${i.qty}x)`).join(', ');
-      
-      const params = new URLSearchParams({
-        action: 'tambahTransaksi',
-        items: rincianItems,
-        total: total,
-        bayar: bayar,
-        kembali: bayar - total
-      });
+// Fungsi cetak langsung menggunakan ESC/POS commands
+async function cetakLangsungThermal(total, bayar, kembalian) {
+  if (!bluetoothCharacteristic) {
+    // Jika belum konek, panggil koneksi dulu
+    await konekPrinterBluetooth();
+    if (!bluetoothCharacteristic) return;
+  }
 
-      fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: "follow" })
-        .then(res => res.json())
-        .then(() => {
-          showLoading(false);
-          selesaikanTransaksi(total, bayar);
-        })
-        .catch(err => {
-          showLoading(false);
-          console.warn("Gagal simpan ke Spreadsheet, mencetak struk...", err);
-          selesaikanTransaksi(total, bayar);
-        });
-    }
+  try {
+    showLoading(true, "Mencetak Struk...");
+    
+    // Perintah ESC/POS dasar
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const INIT = ESC + '@';
+    const CENTER = ESC + 'a' + '\x01';
+    const LEFT = ESC + 'a' + '\x00';
+    const BOLD_ON = ESC + 'E' + '\x01';
+    const BOLD_OFF = ESC + 'E' + '\x00';
+    const CUT = GS + 'V' + '\x41' + '\x03';
+
+    let cetakText = INIT;
+    cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+    cetakText += "Jl. Raya Jagapura Lor\n";
+    cetakText += "--------------------------------\n";
+    cetakText += LEFT;
+
+    keranjang.forEach(item => {
+      const subtotal = item.harga * item.qty;
+      cetakText += `${item.nama}\n`;
+      cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
+    });
+
+    cetakText += "--------------------------------\n";
+    cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
+    cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
+    cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
+    cetakText += "--------------------------------\n";
+    cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
+
+    // Kirim data byte ke printer
+    const encoder = new TextEncoder();
+    const dataBytes = encoder.encode(cetakText);
+    
+    // Kirim secara chunk jika data besar
+    await bluetoothCharacteristic.writeValue(dataBytes);
+
+    showLoading(false);
+  } catch (error) {
+    showLoading(false);
+    console.error("Gagal mencetak:", error);
+    alert("⚠️ Gagal mencetak ke printer.");
+  }
+}
+
+// Perbarui fungsi prosesBayar utama Anda
+function prosesBayar() {
+  if (keranjang.length === 0) {
+    alert("⚠️ Keranjang belanja masih kosong!");
+    return;
+  }
+
+  const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+  const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+  const kembalian = bayar - total;
+
+  if (bayar < total) {
+    alert("⚠️ Uang yang diterima kurang dari total transaksi!");
+    return;
+  }
+
+  // Cetak langsung ke printer thermal Bluetooth
+  cetakLangsungThermal(total, bayar, kembalian);
+
+  // Kurangi stok & reset
+  kurangiStokSetelahBayar();
+  kosongkanKeranjang();
+}
 
     function selesaikanTransaksi(total, bayar) {
       cetakStruk(total, bayar);
