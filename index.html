@@ -741,7 +741,29 @@
         cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
         cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
         cetakText += "--------------------------------\n";
-        cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
+        cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
+
+        // === TAMBAHAN CATATAN KAKI & QR CODE ===
+        cetakText += "Kunjungi situs kami:\n\n";
+        
+        const qrUrl = "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/";
+        const storeLength = qrUrl.length + 3;
+        const pL = String.fromCharCode(storeLength % 256);
+        const pH = String.fromCharCode(Math.floor(storeLength / 256));
+
+        // 1. Set model QR Code (Model 2)
+        cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
+        // 2. Set ukuran modul/pixel QR Code (Ukuran 5 agar pas di kertas 58mm)
+        cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
+        // 3. Set tingkat koreksi kesalahan / Error Correction (Level L)
+        cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
+        // 4. Memasukkan data URL ke penyimpanan memori printer
+        cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
+        // 5. Perintah untuk mencetak QR Code yang tersimpan
+        cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
+        // =======================================
+
+        cetakText += "\n\n\n" + CUT;
 
         const encoder = new TextEncoder();
         const dataBytes = encoder.encode(cetakText);
@@ -793,7 +815,6 @@
           </tr>
         `;
       });
-
       document.getElementById('strukTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
       document.getElementById('strukBayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
       document.getElementById('strukKembali').innerText = `Rp ${(bayar - total).toLocaleString('id-ID')}`;
