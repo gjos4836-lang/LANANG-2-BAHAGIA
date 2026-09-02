@@ -732,58 +732,54 @@
       try {
         showLoading(true, "Mencetak Struk...");
         
-        const ESC = ' ';
-        const GS = ' ';
+        // Perbaikan variabel ESC/POS (sebelumnya kosong)
+        const ESC = '\x1B';
+        const GS = '\x1D';
         const INIT = ESC + '@';
-        const CENTER = ESC + 'a' + ' ';
-        const LEFT = ESC + 'a' + ' ';
-        const BOLD_ON = ESC + 'E' + ' ';
-        const BOLD_OFF = ESC + 'E' + ' ';
-        const CUT = GS + 'V' + 'A' + ' ';
+        const CENTER = ESC + '\x61\x01';
+        const LEFT = ESC + '\x61\x00';
+        const BOLD_ON = ESC + '\x45\x01';
+        const BOLD_OFF = ESC + '\x45\x00';
+        const CUT = GS + '\x56\x41\x00';
 
         let cetakText = INIT;
-        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA
-" + BOLD_OFF;
-        cetakText += "Jl. Raya Jagapura Lor Blok Nyibanda
-";
-        cetakText += "Solusi Kebutuhan Anda
-";
-        cetakText += new Date().toLocaleString('id-ID') + "
-";
-        cetakText += "--------------------------------
-"; // Lebar 32 karakter pas untuk 58mm
+        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+        cetakText += "Jl. Raya Jagapura Lor Blok Nyibanda\n";
+        cetakText += "Solusi Kebutuhan Anda\n";
+        cetakText += new Date().toLocaleString('id-ID') + "\n";
+        cetakText += "--------------------------------\n";
         cetakText += LEFT;
 
         keranjang.forEach(item => {
           const subtotal = item.harga * item.qty;
-          cetakText += `${item.nama}
-`;
-          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}
-`;
+          cetakText += `${item.nama}\n`;
+          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}    Rp ${subtotal.toLocaleString('id-ID')}\n`;
         });
 
-        cetakText += "--------------------------------
-";
-        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}
-`;
-        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}
-`;
-        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}
-`;
-        cetakText += "--------------------------------
-";
-        cetakText += CENTER + "*** TERIMA KASIH ***
-";
-        cetakText += "Barang yang sudah dibeli
-not dapat ditukar/dikembalikan
+        cetakText += "--------------------------------\n";
+        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
+        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
+        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
+        cetakText += "--------------------------------\n";
+        cetakText += CENTER + "*** TERIMA KASIH ***\n";
+        cetakText += "Barang yang sudah dibeli\ntidak dapat ditukar/dikembalikan\n\n";
+        cetakText += "kunjungi situs kami:\n";
 
-";
-        cetakText += "kunjungi situs kami:
-";
-        cetakText += "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/
+        // Perintah ESC/POS untuk mencetak QR Code secara otomatis
+        const url = "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/";
+        const storeLen = url.length + 3;
+        const pL = storeLen % 256;
+        const pH = Math.floor(storeLen / 256);
 
-
-" + CUT;
+        let qrCodeCommand = CENTER;
+        qrCodeCommand += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00'; // Set model QR
+        qrCodeCommand += '\x1D\x28\x6B\x03\x00\x31\x43\x03'; // Ukuran modul QR (1-16)
+        qrCodeCommand += '\x1D\x28\x6B\x03\x00\x31\x45\x30'; // Level error correction
+        qrCodeCommand += `\x1D\x28\x6B${String.fromCharCode(pL)}${String.fromCharCode(pH)}\x31\x50\x30${url}`; // Masukkan data URL
+        qrCodeCommand += '\x1D\x28\x6B\x03\x00\x31\x51\x30'; // Cetak QR Code
+        
+        cetakText += qrCodeCommand;
+        cetakText += "\n\n" + CUT;
 
         const encoder = new TextEncoder();
         const dataBytes = encoder.encode(cetakText);
@@ -797,26 +793,7 @@ not dapat ditukar/dikembalikan
         alert("⚠️ Gagal mencetak ke printer.");
       }
     }
-
-    function prosesBayar() {
-      if (keranjang.length === 0) {
-        alert("⚠️ Keranjang belanja masih kosong!");
-        return;
-      }
-
-      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-      const kembalian = bayar - total;
-
-      if (bayar < total) {
-        alert("⚠️ Uang yang diterima kurang dari total transaksi!");
-        return;
-      }
-
-      cetakLangsungThermal(total, bayar, kembalian);
-      kosongkanKeranjang();
-    }
-
+    
     function cetakStruk(total, bayar) {
       // Set otomatis Tanggal & Waktu transaksi
       document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID', {
