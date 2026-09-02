@@ -680,141 +680,149 @@
       keranjang = [];
       document.getElementById('inputBayar').value = '';
       updateKeranjangUI();
-    }
+    }let bluetoothDevice = null;
+let bluetoothCharacteristic = null;
 
-    let bluetoothDevice = null;
-    let bluetoothCharacteristic = null;
+// Fungsi untuk menghubungkan ke printer Bluetooth
+async function konekPrinterBluetooth() {
+  try {
+    showLoading(true, "Mencari Printer Bluetooth...");
+    bluetoothDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+    });
 
-    async function konekPrinterBluetooth() {
-      try {
-        showLoading(true, "Mencari Printer Bluetooth...");
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-        });
+    const server = await bluetoothDevice.gatt.connect();
+    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+    bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+    
+    showLoading(false);
+    alert("✅ Printer Bluetooth Berhasil Terhubung!");
+  } catch (error) {
+    showLoading(false);
+    console.error("Gagal konek printer:", error);
+    alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
+  }
+}
 
-        const server = await bluetoothDevice.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-        
-        showLoading(false);
-        alert("✅ Printer Bluetooth Berhasil Terhubung!");
-      } catch (error) {
-        showLoading(false);
-        console.error("Gagal konek printer:", error);
-        alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
-      }
-    }
+// Fungsi mengirim perintah cetak teks dan QR Code ke printer thermal 58mm
+async function cetakLangsungThermal(total, bayar, kembalian) {
+  if (!bluetoothCharacteristic) {
+    await konekPrinterBluetooth();
+    if (!bluetoothCharacteristic) return;
+  }
 
-    async function cetakLangsungThermal(total, bayar, kembalian) {
-      if (!bluetoothCharacteristic) {
-        await konekPrinterBluetooth();
-        if (!bluetoothCharacteristic) return;
-      }
+  try {
+    showLoading(true, "Mencetak Struk...");
+    
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    const INIT = ESC + '@';
+    const CENTER = ESC + 'a' + '\x01';
+    const LEFT = ESC + 'a' + '\x00';
+    const BOLD_ON = ESC + 'E' + '\x01';
+    const BOLD_OFF = ESC + 'E' + '\x00';
+    const CUT = GS + 'V' + '\x41' + '\x03';
 
-      try {
-        showLoading(true, "Mencetak Struk...");
-        
-        const ESC = '\x1B';
-        const GS = '\x1D';
-        const INIT = ESC + '@';
-        const CENTER = ESC + 'a' + '\x01';
-        const LEFT = ESC + 'a' + '\x00';
-        const BOLD_ON = ESC + 'E' + '\x01';
-        const BOLD_OFF = ESC + 'E' + '\x00';
-        const CUT = GS + 'V' + '\x41' + '\x03';
+    let cetakText = INIT;
+    cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+    cetakText += "Jl. Raya Jagapura Lor\n";
+    cetakText += "--------------------------------\n"; // Lebar 32 karakter pas untuk 58mm
+    cetakText += LEFT;
 
-        let cetakText = INIT;
-        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-        cetakText += "Jl. Raya Jagapura Lor\n";
-        cetakText += "--------------------------------\n"; // Lebar 32 karakter pas untuk 58mm
-        cetakText += LEFT;
+    // Looping item belanja dari array keranjang
+    keranjang.forEach(item => {
+      const subtotal = item.harga * item.qty;
+      cetakText += `${item.nama}\n`;
+      cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
+    });
 
-        keranjang.forEach(item => {
-          const subtotal = item.harga * item.qty;
-          cetakText += `${item.nama}\n`;
-          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
-        });
+    cetakText += "--------------------------------\n";
+    cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
+    cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
+    cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
+    cetakText += "--------------------------------\n";
+    cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
 
-        cetakText += "--------------------------------\n";
-        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
-        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
-        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
-        cetakText += "--------------------------------\n";
-        cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
+    // === TAMBAHAN CATATAN KAKI & QR CODE ===
+    cetakText += "Kunjungi situs kami:\n\n";
+    
+    const qrUrl = "https://github.io";
+    const storeLength = qrUrl.length + 3;
+    const pL = String.fromCharCode(storeLength % 256);
+    const pH = String.fromCharCode(Math.floor(storeLength / 256));
 
-        // === TAMBAHAN CATATAN KAKI & QR CODE ===
-        cetakText += "Kunjungi situs kami:\n\n";
-        
-        const qrUrl = "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/";
-        const storeLength = qrUrl.length + 3;
-        const pL = String.fromCharCode(storeLength % 256);
-        const pH = String.fromCharCode(Math.floor(storeLength / 256));
+    // 1. Set model QR Code (Model 2)
+    cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
+    // 2. Set ukuran modul/pixel QR Code (Ukuran 5 agar pas di kertas 58mm)
+    cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
+    // 3. Set tingkat koreksi kesalahan / Error Correction (Level L)
+    cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
+    // 4. Memasukkan data URL ke penyimpanan memori printer
+    cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
+    // 5. Perintah untuk mencetak QR Code yang tersimpan
+    cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
+    // =======================================
 
-        // 1. Set model QR Code (Model 2)
-        cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
-        // 2. Set ukuran modul/pixel QR Code (Ukuran 5 agar pas di kertas 58mm)
-        cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
-        // 3. Set tingkat koreksi kesalahan / Error Correction (Level L)
-        cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
-        // 4. Memasukkan data URL ke penyimpanan memori printer
-        cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
-        // 5. Perintah untuk mencetak QR Code yang tersimpan
-        cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
-        // =======================================
+    cetakText += "\n\n\n" + CUT;
 
-        cetakText += "\n\n\n" + CUT;
+    const encoder = new TextEncoder();
+    const dataBytes = encoder.encode(cetakText);
+    
+    await bluetoothCharacteristic.writeValue(dataBytes);
 
-        const encoder = new TextEncoder();
-        const dataBytes = encoder.encode(cetakText);
-        
-        await bluetoothCharacteristic.writeValue(dataBytes);
+    showLoading(false);
+  } catch (error) {
+    showLoading(false);
+    console.error("Gagal mencetak:", error);
+    alert("⚠️ Gagal mencetak ke printer.");
+  }
+}
 
-        showLoading(false);
-      } catch (error) {
-        showLoading(false);
-        console.error("Gagal mencetak:", error);
-        alert("⚠️ Gagal mencetak ke printer.");
-      }
-    }
+// Fungsi validasi, hitung total, dan memproses pembayaran (Sudah Diperbaiki)
+async function prosesBayar() {
+  if (keranjang.length === 0) {
+    alert("⚠️ Keranjang belanja masih kosong!");
+    return;
+  }
 
-    function prosesBayar() {
-      if (keranjang.length === 0) {
-        alert("⚠️ Keranjang belanja masih kosong!");
-        return;
-      }
+  const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+  const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+  const kembalian = bayar - total;
 
-      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-      const kembalian = bayar - total;
+  if (bayar < total) {
+    alert("⚠️ Uang yang diterima kurang dari total transaksi!");
+    return;
+  }
 
-      if (bayar < total) {
-        alert("⚠️ Uang yang diterima kurang dari total transaksi!");
-        return;
-      }
+  // Menunggu (await) proses kirim data cetak selesai sepenuhnya
+  await cetakLangsungThermal(total, bayar, kembalian);
+  
+  // Keranjang dikosongkan setelah proses di atas selesai menjamin item tercetak
+  kosongkanKeranjang();
+}
 
-      cetakLangsungThermal(total, bayar, kembalian);
-      kosongkanKeranjang();
-    }
+// Fungsi memperbarui visual struk digital pada halaman HTML kasir
+function cetakStruk(total, bayar) {
+  document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID');
+  const strukBody = document.getElementById('strukItem');
+  strukBody.innerHTML = '';
 
-    function cetakStruk(total, bayar) {
-      document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID');
-      const strukBody = document.getElementById('strukItem');
-      strukBody.innerHTML = '';
+  keranjang.forEach(item => {
+    strukBody.innerHTML += `
+      <tr class="py-0.5">
+        <td class="py-0.5" colspan="2">
+          <div class="font-bold">${item.nama}</div>
+          <div class="flex justify-between text-slate-600">
+            <span>${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
+            <span>Rp ${(item.harga * item.qty).toLocaleString('id-ID')}</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
 
-      keranjang.forEach(item => {
-        strukBody.innerHTML += `
-          <tr class="py-0.5">
-            <td class="py-0.5" colspan="2">
-              <div class="font-bold">${item.nama}</div>
-              <div class="flex justify-between text-slate-600">
-                <span>${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
-                <span>Rp ${(item.harga * item.qty).toLocaleString('id-ID')}</span>
-              </div>
-            </td>
-          </tr>
-        `;
-      });
       document.getElementById('strukTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
       document.getElementById('strukBayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
       document.getElementById('strukKembali').innerText = `Rp ${(bayar - total).toLocaleString('id-ID')}`;
