@@ -706,6 +706,7 @@ async function konekPrinterBluetooth() {
 }
 
 // Fungsi mengirim perintah cetak teks dan QR Code ke printer thermal 58mm
+// Fungsi mengirim perintah cetak teks dan QR Code ke printer thermal 58mm secara aman (Chunked)
 async function cetakLangsungThermal(total, bayar, kembalian) {
   if (!bluetoothCharacteristic) {
     await konekPrinterBluetooth();
@@ -728,7 +729,7 @@ async function cetakLangsungThermal(total, bayar, kembalian) {
     cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
     cetakText += "Jl. Raya Jagapura Lor - Nyibanda\n";
     cetakText += "Solusi Kebutuhan Anda\n";
-    cetakText += "--------------------------------\n"; // Lebar 32 karakter pas untuk 58mm
+    cetakText += "--------------------------------\n"; 
     cetakText += LEFT;
 
     // Looping item belanja dari array keranjang
@@ -753,33 +754,34 @@ async function cetakLangsungThermal(total, bayar, kembalian) {
     const pL = String.fromCharCode(storeLength % 256);
     const pH = String.fromCharCode(Math.floor(storeLength / 256));
 
-    // 1. Set model QR Code (Model 2)
     cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
-    // 2. Set ukuran modul/pixel QR Code (Ukuran 5 agar pas di kertas 58mm)
     cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
-    // 3. Set tingkat koreksi kesalahan / Error Correction (Level L)
     cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
-    // 4. Memasukkan data URL ke penyimpanan memori printer
     cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
-    // 5. Perintah untuk mencetak QR Code yang tersimpan
     cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
-    // =======================================
-
+    
     cetakText += "\n\n\n" + CUT;
 
     const encoder = new TextEncoder();
     const dataBytes = encoder.encode(cetakText);
     
-    await bluetoothCharacteristic.writeValue(dataBytes);
+    // === PENGIRIMAN DATA SECARA BERTAHAP (CHUNK) AGAR TIDAK OVERFLOW ===
+    const CHUNK_SIZE = 512; // Ukuran aman per paket Bluetooth
+    for (let i = 0; i < dataBytes.length; i += CHUNK_SIZE) {
+      const chunk = dataBytes.slice(i, i + CHUNK_SIZE);
+      await bluetoothCharacteristic.writeValue(chunk);
+      // Jeda kecil antar chunk untuk memberi waktu buffer printer memproses data
+      await new Promise(resolve => setTimeout(resolve, 50)); 
+    }
 
     showLoading(false);
   } catch (error) {
     showLoading(false);
     console.error("Gagal mencetak:", error);
-    alert("⚠️ Gagal mencetak ke printer.");
+    alert("⚠️ Gagal mencetak ke printer. Pastikan koneksi Bluetooth stabil.");
   }
 }
-
+    
 // Fungsi validasi, hitung total, dan memproses pembayaran (Sudah Diperbaiki)
 async function prosesBayar() {
   if (keranjang.length === 0) {
