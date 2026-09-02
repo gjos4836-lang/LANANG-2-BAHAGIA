@@ -13,16 +13,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   
+  <!-- QRCode.js for generating QR code for the website link -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     body { font-family: 'Inter', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
     @media print {
-      @page { margin: 0; size: 58mm auto; } /* Diubah ke ukuran spesifik 58mm */
+      @page { margin: 0; size: 58mm auto; }
       body * { visibility: hidden; }
       #areaStruk, #areaStruk * { visibility: visible; }
       #areaStruk { 
-        position: absolute; left: 0; top: 0; width: 58mm; padding: 4px; margin: 0;
+        position: absolute; left: 0; top: 0; width: 58mm; padding: 4mm; margin: 0;
       }
       .no-print { display: none !important; }
     }
@@ -207,12 +210,14 @@
               <span class="text-lg">🛒</span>
               <h2 class="text-base font-bold text-slate-800">Kasir Digital</h2>
             </div>
-            <button onclick="konekPrinterBluetooth()" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl font-bold transition">
-              🦷 Hubungkan Printer
-            </button>
-            <button onclick="kosongkanKeranjang()" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
-              Reset Keranjang
-            </button>
+            <div class="flex gap-2">
+              <button onclick="konekPrinterBluetooth()" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl font-bold transition">
+                🦷 Hubungkan Printer
+              </button>
+              <button onclick="kosongkanKeranjang()" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
+                Reset Keranjang
+              </button>
+            </div>
           </div>
 
           <div class="mb-5">
@@ -310,8 +315,9 @@
     <p class="font-medium">&copy; 2026 LANANG 2 BAHAGIA. All Rights Reserved.</p>
   </footer>
 
-  <!-- AREA STRUK THERMAL (Diubah ke 58mm) -->
-  <div id="areaStruk" class="hidden print:block p-2 max-w-[58mm] mx-auto font-mono text-[10px] leading-tight text-black">
+  <!-- AREA STRUK THERMAL 58mm (Diperbarui Sesuai Permintaan) -->
+  <div id="areaStruk" class="hidden print:block p-2 max-w-[58mm] mx-auto font-mono text-[10px] leading-tight text-black bg-white">
+    <!-- Header (Bagian Atas) -->
     <div class="text-center pb-2 mb-2 border-b border-black border-dashed">
       <h2 class="font-bold text-xs tracking-wide">LANANG 2 BAHAGIA</h2>
       <p class="text-[8px] mt-0.5">Jl. Raya Jagapura Lor Blok Nyibanda</p>
@@ -319,19 +325,30 @@
       <p id="strukTanggal" class="text-[8px] mt-1 text-slate-600"></p>
     </div>
     
-    <table class="w-full mb-2">
-      <tbody id="strukItem" class="divide-y divide-dashed divide-slate-300"></tbody>
-    </table>
+    <!-- Daftar Item (Bagian Tengah) -->
+    <div class="mb-2">
+      <table class="w-full">
+        <tbody id="strukItem" class="divide-y divide-dashed divide-slate-300"></tbody>
+      </table>
+    </div>
     
+    <!-- Ringkasan Pembayaran -->
     <div class="border-t border-black border-dashed pt-1.5 space-y-0.5">
       <div class="flex justify-between font-bold"><span>TOTAL</span><span id="strukTotal"></span></div>
       <div class="flex justify-between"><span>BAYAR</span><span id="strukBayar"></span></div>
       <div class="flex justify-between"><span>KEMBALI</span><span id="strukKembali"></span></div>
     </div>
     
+    <!-- Footer (Bagian Bawah) & Barcode Link Website -->
     <div class="text-center border-t border-black border-dashed mt-3 pt-2 text-[8px]">
       <p class="font-bold">*** TERIMA KASIH ***</p>
-      <p class="mt-0.5">Barang yang sudah dibeli<br>tidak dapat ditukar/dikembalikan</p>
+      <p class="mt-0.5">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
+      
+      <div class="mt-3 pt-2 border-t border-black border-dashed flex flex-col items-center">
+        <p class="mb-1 font-semibold">kunjungi situs kami :</p>
+        <div id="qrcodeStruk" class="my-1 flex justify-center"></div>
+        <p class="text-[7px] text-slate-600 break-all mt-0.5">https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/</p>
+      </div>
     </div>
   </div>
 
@@ -715,33 +732,58 @@
       try {
         showLoading(true, "Mencetak Struk...");
         
-        const ESC = '\x1B';
-        const GS = '\x1D';
+        const ESC = ' ';
+        const GS = ' ';
         const INIT = ESC + '@';
-        const CENTER = ESC + 'a' + '\x01';
-        const LEFT = ESC + 'a' + '\x00';
-        const BOLD_ON = ESC + 'E' + '\x01';
-        const BOLD_OFF = ESC + 'E' + '\x00';
-        const CUT = GS + 'V' + '\x41' + '\x03';
+        const CENTER = ESC + 'a' + ' ';
+        const LEFT = ESC + 'a' + ' ';
+        const BOLD_ON = ESC + 'E' + ' ';
+        const BOLD_OFF = ESC + 'E' + ' ';
+        const CUT = GS + 'V' + 'A' + ' ';
 
         let cetakText = INIT;
-        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-        cetakText += "Jl. Raya Jagapura Lor\n";
-        cetakText += "--------------------------------\n"; // Lebar 32 karakter pas untuk 58mm
+        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA
+" + BOLD_OFF;
+        cetakText += "Jl. Raya Jagapura Lor Blok Nyibanda
+";
+        cetakText += "Solusi Kebutuhan Anda
+";
+        cetakText += new Date().toLocaleString('id-ID') + "
+";
+        cetakText += "--------------------------------
+"; // Lebar 32 karakter pas untuk 58mm
         cetakText += LEFT;
 
         keranjang.forEach(item => {
           const subtotal = item.harga * item.qty;
-          cetakText += `${item.nama}\n`;
-          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
+          cetakText += `${item.nama}
+`;
+          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}
+`;
         });
 
-        cetakText += "--------------------------------\n";
-        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
-        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
-        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
-        cetakText += "--------------------------------\n";
-        cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
+        cetakText += "--------------------------------
+";
+        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}
+`;
+        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}
+`;
+        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}
+`;
+        cetakText += "--------------------------------
+";
+        cetakText += CENTER + "*** TERIMA KASIH ***
+";
+        cetakText += "Barang yang sudah dibeli
+not dapat ditukar/dikembalikan
+
+";
+        cetakText += "kunjungi situs kami:
+";
+        cetakText += "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/
+
+
+" + CUT;
 
         const encoder = new TextEncoder();
         const dataBytes = encoder.encode(cetakText);
@@ -776,29 +818,52 @@
     }
 
     function cetakStruk(total, bayar) {
-      document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID');
+      // Set otomatis Tanggal & Waktu transaksi
+      document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'medium'
+      });
+
+      // Render Daftar Item (Qty x Harga satuan = Subtotal)
       const strukBody = document.getElementById('strukItem');
       strukBody.innerHTML = '';
 
       keranjang.forEach(item => {
+        const subtotal = item.harga * item.qty;
         strukBody.innerHTML += `
           <tr class="py-0.5">
             <td class="py-0.5" colspan="2">
               <div class="font-bold">${item.nama}</div>
-              <div class="flex justify-between text-slate-600">
+              <div class="flex justify-between text-slate-700">
                 <span>${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
-                <span>Rp ${(item.harga * item.qty).toLocaleString('id-ID')}</span>
+                <span class="font-semibold">Rp ${subtotal.toLocaleString('id-ID')}</span>
               </div>
             </td>
           </tr>
         `;
       });
 
+      // Ringkasan Pembayaran
       document.getElementById('strukTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
       document.getElementById('strukBayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
       document.getElementById('strukKembali').innerText = `Rp ${(bayar - total).toLocaleString('id-ID')}`;
 
-      window.print();
+      // Generate QR Code untuk link situs
+      const qrContainer = document.getElementById('qrcodeStruk');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/",
+        width: 90,
+        height: 90,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.M
+      });
+
+      // Panggil window.print()
+      setTimeout(() => {
+        window.print();
+      }, 300);
     }
   </script>
 </body>
