@@ -18,11 +18,11 @@
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
     @media print {
-      @page { margin: 0; size: auto; }
+      @page { margin: 0; size: 58mm auto; } /* Diubah ke ukuran spesifik 58mm */
       body * { visibility: hidden; }
       #areaStruk, #areaStruk * { visibility: visible; }
       #areaStruk { 
-        position: absolute; left: 0; top: 0; width: 100%; padding: 8px; margin: 0;
+        position: absolute; left: 0; top: 0; width: 58mm; padding: 4px; margin: 0;
       }
       .no-print { display: none !important; }
     }
@@ -208,8 +208,8 @@
               <h2 class="text-base font-bold text-slate-800">Kasir Digital</h2>
             </div>
             <button onclick="konekPrinterBluetooth()" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl font-bold transition">
-      🦷 Hubungkan Printer
-    </button>
+              🦷 Hubungkan Printer
+            </button>
             <button onclick="kosongkanKeranjang()" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
               Reset Keranjang
             </button>
@@ -310,25 +310,26 @@
     <p class="font-medium">&copy; 2026 LANANG 2 BAHAGIA. All Rights Reserved.</p>
   </footer>
 
-  <!-- AREA STRUK THERMAL -->
-  <div id="areaStruk" class="hidden print:block p-4 max-w-[80mm] mx-auto font-mono text-[11px] leading-tight text-black">
-    <div class="text-center pb-3 mb-3 border-b border-black border-dashed">
-      <h2 class="font-bold text-sm tracking-wide">LANANG 2 BAHAGIA</h2>
-      <p class="text-[9px] mt-0.5">Jl. Raya Jagapura Lor Blok Nyibanda</p>
-      <p id="strukTanggal" class="text-[9px] mt-1 text-slate-600"></p>
+  <!-- AREA STRUK THERMAL (Diubah ke 58mm) -->
+  <div id="areaStruk" class="hidden print:block p-2 max-w-[58mm] mx-auto font-mono text-[10px] leading-tight text-black">
+    <div class="text-center pb-2 mb-2 border-b border-black border-dashed">
+      <h2 class="font-bold text-xs tracking-wide">LANANG 2 BAHAGIA</h2>
+      <p class="text-[8px] mt-0.5">Jl. Raya Jagapura Lor Blok Nyibanda</p>
+      <p class="text-[8px] mt-0.5">Solusi Kebutuhan Anda</p>
+      <p id="strukTanggal" class="text-[8px] mt-1 text-slate-600"></p>
     </div>
     
-    <table class="w-full mb-3">
+    <table class="w-full mb-2">
       <tbody id="strukItem" class="divide-y divide-dashed divide-slate-300"></tbody>
     </table>
     
-    <div class="border-t border-black border-dashed pt-2 space-y-1">
+    <div class="border-t border-black border-dashed pt-1.5 space-y-0.5">
       <div class="flex justify-between font-bold"><span>TOTAL</span><span id="strukTotal"></span></div>
       <div class="flex justify-between"><span>BAYAR</span><span id="strukBayar"></span></div>
       <div class="flex justify-between"><span>KEMBALI</span><span id="strukKembali"></span></div>
     </div>
     
-    <div class="text-center border-t border-black border-dashed mt-4 pt-3 text-[9px]">
+    <div class="text-center border-t border-black border-dashed mt-3 pt-2 text-[8px]">
       <p class="font-bold">*** TERIMA KASIH ***</p>
       <p class="mt-0.5">Barang yang sudah dibeli<br>tidak dapat ditukar/dikembalikan</p>
     </div>
@@ -460,7 +461,6 @@
       });
     }
 
-    /* FUNGSI EDIT BARANG (DENGAN PROTEKSI PASSWORD) */
     function bukaModalEdit(id) {
       if (!isKasirUnlocked) {
         alert("🔒 Fitur ini terkunci! Silakan masuk ke 'Halaman Kasir' terlebih dahulu untuk memasukkan password otorisasi.");
@@ -682,114 +682,96 @@
       updateKeranjangUI();
     }
 
-    // Simpan referensi device bluetooth yang terhubung
-let bluetoothDevice = null;
-let bluetoothCharacteristic = null;
+    let bluetoothDevice = null;
+    let bluetoothCharacteristic = null;
 
-// Fungsi untuk menghubungkan printer thermal via Bluetooth
-async function konekPrinterBluetooth() {
-  try {
-    showLoading(true, "Mencari Printer Bluetooth...");
-    bluetoothDevice = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // UUID umum printer thermal ESC/POS
-    });
+    async function konekPrinterBluetooth() {
+      try {
+        showLoading(true, "Mencari Printer Bluetooth...");
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        });
 
-    const server = await bluetoothDevice.gatt.connect();
-    // Menggunakan service standar printer thermal
-    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-    
-    showLoading(false);
-    alert("✅ Printer Bluetooth Berhasil Terhubung!");
-  } catch (error) {
-    showLoading(false);
-    console.error("Gagal konek printer:", error);
-    alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
-  }
-}
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+        bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        
+        showLoading(false);
+        alert("✅ Printer Bluetooth Berhasil Terhubung!");
+      } catch (error) {
+        showLoading(false);
+        console.error("Gagal konek printer:", error);
+        alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
+      }
+    }
 
-// Fungsi cetak langsung menggunakan ESC/POS commands
-async function cetakLangsungThermal(total, bayar, kembalian) {
-  if (!bluetoothCharacteristic) {
-    // Jika belum konek, panggil koneksi dulu
-    await konekPrinterBluetooth();
-    if (!bluetoothCharacteristic) return;
-  }
+    async function cetakLangsungThermal(total, bayar, kembalian) {
+      if (!bluetoothCharacteristic) {
+        await konekPrinterBluetooth();
+        if (!bluetoothCharacteristic) return;
+      }
 
-  try {
-    showLoading(true, "Mencetak Struk...");
-    
-    // Perintah ESC/POS dasar
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const INIT = ESC + '@';
-    const CENTER = ESC + 'a' + '\x01';
-    const LEFT = ESC + 'a' + '\x00';
-    const BOLD_ON = ESC + 'E' + '\x01';
-    const BOLD_OFF = ESC + 'E' + '\x00';
-    const CUT = GS + 'V' + '\x41' + '\x03';
+      try {
+        showLoading(true, "Mencetak Struk...");
+        
+        const ESC = '\x1B';
+        const GS = '\x1D';
+        const INIT = ESC + '@';
+        const CENTER = ESC + 'a' + '\x01';
+        const LEFT = ESC + 'a' + '\x00';
+        const BOLD_ON = ESC + 'E' + '\x01';
+        const BOLD_OFF = ESC + 'E' + '\x00';
+        const CUT = GS + 'V' + '\x41' + '\x03';
 
-    let cetakText = INIT;
-    cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-    cetakText += "Jl. Raya Jagapura Lor\n";
-    cetakText += "--------------------------------\n";
-    cetakText += LEFT;
+        let cetakText = INIT;
+        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+        cetakText += "Jl. Raya Jagapura Lor\n";
+        cetakText += "--------------------------------\n"; // Lebar 32 karakter pas untuk 58mm
+        cetakText += LEFT;
 
-    keranjang.forEach(item => {
-      const subtotal = item.harga * item.qty;
-      cetakText += `${item.nama}\n`;
-      cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
-    });
+        keranjang.forEach(item => {
+          const subtotal = item.harga * item.qty;
+          cetakText += `${item.nama}\n`;
+          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
+        });
 
-    cetakText += "--------------------------------\n";
-    cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
-    cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
-    cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
-    cetakText += "--------------------------------\n";
-    cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
+        cetakText += "--------------------------------\n";
+        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
+        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
+        cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
+        cetakText += "--------------------------------\n";
+        cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
 
-    // Kirim data byte ke printer
-    const encoder = new TextEncoder();
-    const dataBytes = encoder.encode(cetakText);
-    
-    // Kirim secara chunk jika data besar
-    await bluetoothCharacteristic.writeValue(dataBytes);
+        const encoder = new TextEncoder();
+        const dataBytes = encoder.encode(cetakText);
+        
+        await bluetoothCharacteristic.writeValue(dataBytes);
 
-    showLoading(false);
-  } catch (error) {
-    showLoading(false);
-    console.error("Gagal mencetak:", error);
-    alert("⚠️ Gagal mencetak ke printer.");
-  }
-}
+        showLoading(false);
+      } catch (error) {
+        showLoading(false);
+        console.error("Gagal mencetak:", error);
+        alert("⚠️ Gagal mencetak ke printer.");
+      }
+    }
 
-// Perbarui fungsi prosesBayar utama Anda
-function prosesBayar() {
-  if (keranjang.length === 0) {
-    alert("⚠️ Keranjang belanja masih kosong!");
-    return;
-  }
+    function prosesBayar() {
+      if (keranjang.length === 0) {
+        alert("⚠️ Keranjang belanja masih kosong!");
+        return;
+      }
 
-  const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-  const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-  const kembalian = bayar - total;
+      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+      const kembalian = bayar - total;
 
-  if (bayar < total) {
-    alert("⚠️ Uang yang diterima kurang dari total transaksi!");
-    return;
-  }
+      if (bayar < total) {
+        alert("⚠️ Uang yang diterima kurang dari total transaksi!");
+        return;
+      }
 
-  // Cetak langsung ke printer thermal Bluetooth
-  cetakLangsungThermal(total, bayar, kembalian);
-
-  // Kurangi stok & reset
-  kurangiStokSetelahBayar();
-  kosongkanKeranjang();
-}
-
-    function selesaikanTransaksi(total, bayar) {
-      cetakStruk(total, bayar);
+      cetakLangsungThermal(total, bayar, kembalian);
       kosongkanKeranjang();
     }
 
@@ -800,8 +782,8 @@ function prosesBayar() {
 
       keranjang.forEach(item => {
         strukBody.innerHTML += `
-          <tr class="py-1">
-            <td class="py-1" colspan="2">
+          <tr class="py-0.5">
+            <td class="py-0.5" colspan="2">
               <div class="font-bold">${item.nama}</div>
               <div class="flex justify-between text-slate-600">
                 <span>${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
