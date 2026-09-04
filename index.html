@@ -18,11 +18,11 @@
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
     @media print {
-      @page { margin: 0; size: 58mm auto; } /* Diubah ke ukuran spesifik 58mm */
+      @page { margin: 10mm; size: A4 portrait; }
       body * { visibility: hidden; }
-      #areaStruk, #areaStruk * { visibility: visible; }
-      #areaStruk { 
-        position: absolute; left: 0; top: 0; width: 58mm; padding: 4px; margin: 0;
+      #areaPrintRekap, #areaPrintRekap * { visibility: visible; }
+      #areaPrintRekap { 
+        position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0;
       }
       .no-print { display: none !important; }
     }
@@ -30,7 +30,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-  <!-- OVERLAY LOADING LOGIC -->
+  <!-- OVERLAY LOADING -->
   <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="bg-white p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-100 max-w-xs w-full">
       <div class="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin shrink-0"></div>
@@ -46,7 +46,7 @@
           🔒
         </div>
         <h3 class="text-xl font-bold text-slate-800 tracking-tight">Akses Kasir Terkunci</h3>
-        <p class="text-xs text-slate-500 mt-1">Masukkan password otorisasi untuk membuka aplikasi kasir.</p>
+        <p class="text-xs text-slate-500 mt-1">Masukkan password otorisasi untuk membuka fitur kasir & rekap.</p>
       </div>
       
       <form onsubmit="verifikasiPassword(event)" class="space-y-4">
@@ -61,7 +61,7 @@
             Batal
           </button>
           <button type="submit" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/20 transition">
-            Masuk Kasir
+            Masuk Akses
           </button>
         </div>
       </form>
@@ -111,7 +111,7 @@
 
   <!-- NAVBAR / HEADER UTAMA -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col lg:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-600/30">
           L
@@ -124,12 +124,15 @@
         </div>
       </div>
       
-      <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto">
-        <button id="btnTabProfil" onclick="switchTab('profil')" class="flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60">
-          ℹ️ Profil & Katalog
+      <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full lg:w-auto overflow-x-auto gap-1">
+        <button id="btnTabProfil" onclick="switchTab('profil')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60 whitespace-nowrap">
+          ℹ️ Katalog
         </button>
-        <button id="btnTabKasir" onclick="switchTab('kasir')" class="flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900">
-          🛒 Halaman Kasir 🔒
+        <button id="btnTabKasir" onclick="switchTab('kasir')" class="px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 whitespace-nowrap">
+          🛒 Kasir 🔒
+        </button>
+        <button id="btnTabRekap" onclick="switchTab('rekap')" class="px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 whitespace-nowrap">
+          📊 Rekap Transaksi 🔒
         </button>
       </div>
     </div>
@@ -207,12 +210,14 @@
               <span class="text-lg">🛒</span>
               <h2 class="text-base font-bold text-slate-800">Kasir Digital</h2>
             </div>
-            <button onclick="konekPrinterBluetooth()" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl font-bold transition">
-              🦷 Hubungkan Printer
-            </button>
-            <button onclick="kosongkanKeranjang()" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
-              Reset Keranjang
-            </button>
+            <div class="flex gap-2">
+              <button onclick="konekPrinterBluetooth()" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl font-bold transition">
+                🦷 Printer
+              </button>
+              <button onclick="kosongkanKeranjang()" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl font-bold transition">
+                Reset
+              </button>
+            </div>
           </div>
 
           <div class="mb-5">
@@ -223,7 +228,7 @@
           </div>
 
           <!-- Tabel Keranjang -->
-          <div class="overflow-hidden border border-slate-100 rounded-xl mb-6">
+          <div class="overflow-hidden border border-slate-100 rounded-xl mb-5">
             <div class="overflow-y-auto max-h-[35vh]">
               <table class="w-full text-xs text-left border-collapse">
                 <thead class="bg-slate-50 text-slate-500 font-semibold sticky top-0 border-b border-slate-100">
@@ -243,7 +248,13 @@
             </div>
           </div>
 
-          <!-- Ringkasan Bayar -->
+          <!-- Input Nama Pembeli -->
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Pembeli</label>
+            <input type="text" id="inputNamaPembeli" placeholder="Contoh: Bpk. Budi (Opsional)" 
+                   class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+
           <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-4">
             <div class="flex justify-between items-center font-bold text-slate-800">
               <span class="text-sm">Total Transaksi</span>
@@ -257,11 +268,11 @@
             </div>
 
             <div class="flex justify-between items-center font-semibold text-sm pt-1">
-              <span class="text-slate-600">Kembalian:</span>
+              <span id="labelKembalianOrHutang" class="text-slate-600">Kembalian:</span>
               <span id="textKembalian" class="font-bold text-slate-800">Rp 0</span>
             </div>
 
-            <button onclick="prosesBayar()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition active:scale-[0.99] mt-2">
+            <button onclick="prosesBayar()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition active:scale-[0.99]">
               💾 Simpan & Cetak Struk
             </button>
           </div>
@@ -304,19 +315,67 @@
       </div>
     </div>
 
+    <!-- TAB REKAP TRANSAKSI -->
+    <div id="tabRekap" class="hidden space-y-6 max-w-5xl mx-auto">
+      <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">📊 Rekapitulasi Omset & Transaksi</h2>
+          <p class="text-xs text-slate-500">Laporan omset harian, bulanan, dan rekap khusus per pembeli per bulan.</p>
+        </div>
+        <button onclick="muatDataRekap()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-sm">
+          <span>🔄</span> Refresh Rekap
+        </button>
+      </div>
+
+      <!-- Tombol Sub-Tab Rekap (Harian / Bulanan / Per Pembeli) -->
+      <div class="flex bg-slate-200/70 p-1 rounded-xl max-w-md mx-auto">
+        <button id="btnSubHarian" onclick="switchSubRekap('harian')" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-sm">
+          Rekap Harian
+        </button>
+        <button id="btnSubBulanan" onclick="switchSubRekap('bulanan')" class="flex-1 py-2 text-xs font-bold transition text-slate-600">
+          Rekap Bulanan
+        </button>
+        <button id="btnSubPembeli" onclick="switchSubRekap('pembeli')" class="flex-1 py-2 text-xs font-bold transition text-slate-600">
+          Per Pembeli
+        </button>
+      </div>
+
+      <!-- Konten Rekap Harian -->
+      <div id="kontenRekapHarian" class="space-y-4">
+        <div id="listRekapHarian" class="space-y-4">
+          <!-- Render via JS -->
+        </div>
+      </div>
+
+      <!-- Konten Rekap Bulanan -->
+      <div id="kontenRekapBulanan" class="space-y-4 hidden">
+        <div id="listRekapBulanan" class="space-y-4">
+          <!-- Render via JS -->
+        </div>
+      </div>
+
+      <!-- Konten Rekap Per Pembeli Per Bulan -->
+      <div id="kontenRekapPembeli" class="space-y-4 hidden">
+        <div id="listRekapPembeli" class="space-y-4">
+          <!-- Render via JS -->
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <footer class="bg-white border-t border-slate-200 text-slate-500 text-center py-4 text-xs mt-auto no-print">
     <p class="font-medium">&copy; 2026 LANANG 2 BAHAGIA. All Rights Reserved.</p>
   </footer>
 
-  <!-- AREA STRUK THERMAL (Diubah ke 58mm) -->
+  <!-- AREA STRUK THERMAL (58mm) -->
   <div id="areaStruk" class="hidden print:block p-2 max-w-[58mm] mx-auto font-mono text-[10px] leading-tight text-black">
     <div class="text-center pb-2 mb-2 border-b border-black border-dashed">
       <h2 class="font-bold text-xs tracking-wide">LANANG 2 BAHAGIA</h2>
       <p class="text-[8px] mt-0.5">Jl. Raya Jagapura Lor Blok Nyibanda</p>
       <p class="text-[8px] mt-0.5">Solusi Kebutuhan Anda</p>
       <p id="strukTanggal" class="text-[8px] mt-1 text-slate-600"></p>
+      <p id="strukNamaPembeli" class="text-[9px] font-bold mt-1 text-left">Pembeli: -</p>
     </div>
     
     <table class="w-full mb-2">
@@ -326,12 +385,29 @@
     <div class="border-t border-black border-dashed pt-1.5 space-y-0.5">
       <div class="flex justify-between font-bold"><span>TOTAL</span><span id="strukTotal"></span></div>
       <div class="flex justify-between"><span>BAYAR</span><span id="strukBayar"></span></div>
-      <div class="flex justify-between"><span>KEMBALI</span><span id="strukKembali"></span></div>
+      <div class="flex justify-between"><span id="strukLabelKembaliOrHutang">KEMBALI</span><span id="strukKembali"></span></div>
     </div>
     
     <div class="text-center border-t border-black border-dashed mt-3 pt-2 text-[8px]">
       <p class="font-bold">*** TERIMA KASIH ***</p>
       <p class="mt-0.5">Barang yang sudah dibeli<br>tidak dapat ditukar/dikembalikan</p>
+    </div>
+  </div>
+
+  <!-- AREA PRINT LAPORAN REKAP (A4 Professional) -->
+  <div id="areaPrintRekap" class="hidden print:block p-6 bg-white font-sans text-black">
+    <div class="text-center pb-4 mb-4 border-b-2 border-black">
+      <h1 class="text-xl font-black tracking-wide uppercase">LANANG 2 BAHAGIA</h1>
+      <p class="text-xs">Jl. Raya Jagapura Lor Blok Nyibanda — Solusi Kebutuhan Rumah Anda</p>
+      <h2 id="printJudulLaporan" class="text-sm font-bold uppercase mt-3">LAPORAN REKAPITULASI TRANSAKSI</h2>
+      <p id="printInfoWaktu" class="text-xs text-slate-600 mt-0.5"></p>
+    </div>
+    <div id="printKontenTabel"></div>
+    <div class="mt-8 flex justify-end text-xs">
+      <div class="text-center">
+        <p>Jagapura Lor, <span id="printTglCetak"></span></p>
+        <p class="font-bold mt-12">Pimpinan / Kasir</p>
+      </div>
     </div>
   </div>
 
@@ -343,6 +419,8 @@
     let keranjang = [];
     let isKasirUnlocked = false;
 
+    let cacheDataRekap = { harian: [], bulanan: [], rekapPembeliBulanan: [] };
+
     window.onload = function() {
       muatDataProdukFromSheets();
     };
@@ -350,23 +428,65 @@
     function switchTab(tab) {
       const tabProfil = document.getElementById('tabProfil');
       const tabKasir = document.getElementById('tabKasir');
+      const tabRekap = document.getElementById('tabRekap');
+      
       const btnProfil = document.getElementById('btnTabProfil');
       const btnKasir = document.getElementById('btnTabKasir');
+      const btnRekap = document.getElementById('btnTabRekap');
+
+      if ((tab === 'kasir' || tab === 'rekap') && !isKasirUnlocked) {
+        bukaModalLogin();
+        return;
+      }
+
+      tabProfil.classList.add('hidden');
+      tabKasir.classList.add('hidden');
+      tabRekap.classList.add('hidden');
+
+      btnProfil.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 whitespace-nowrap";
+      btnKasir.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 whitespace-nowrap";
+      btnRekap.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900 whitespace-nowrap";
 
       if (tab === 'profil') {
         tabProfil.classList.remove('hidden');
-        tabKasir.classList.add('hidden');
-        btnProfil.className = "flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60";
-        btnKasir.className = "flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        btnProfil.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60 whitespace-nowrap";
       } else if (tab === 'kasir') {
-        if (!isKasirUnlocked) {
-          bukaModalLogin();
-          return;
-        }
-        tabProfil.classList.add('hidden');
         tabKasir.classList.remove('hidden');
-        btnKasir.className = "flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60";
-        btnProfil.className = "flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        btnKasir.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60 whitespace-nowrap";
+      } else if (tab === 'rekap') {
+        tabRekap.classList.remove('hidden');
+        btnRekap.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-emerald-800 shadow-sm border border-slate-200/60 whitespace-nowrap";
+        muatDataRekap();
+      }
+    }
+
+    function switchSubRekap(sub) {
+      const btnHarian = document.getElementById('btnSubHarian');
+      const btnBulanan = document.getElementById('btnSubBulanan');
+      const btnPembeli = document.getElementById('btnSubPembeli');
+      
+      const kontenHarian = document.getElementById('kontenRekapHarian');
+      const kontenBulanan = document.getElementById('kontenRekapBulanan');
+      const kontenPembeli = document.getElementById('kontenRekapPembeli');
+
+      // Reset style tombol
+      btnHarian.className = "flex-1 py-2 text-xs font-bold transition text-slate-600";
+      btnBulanan.className = "flex-1 py-2 text-xs font-bold transition text-slate-600";
+      btnPembeli.className = "flex-1 py-2 text-xs font-bold transition text-slate-600";
+
+      kontenHarian.classList.add('hidden');
+      kontenBulanan.classList.add('hidden');
+      kontenPembeli.classList.add('hidden');
+
+      if (sub === 'harian') {
+        btnHarian.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-sm";
+        kontenHarian.classList.remove('hidden');
+      } else if (sub === 'bulanan') {
+        btnBulanan.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-sm";
+        kontenBulanan.classList.remove('hidden');
+      } else if (sub === 'pembeli') {
+        btnPembeli.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-sm";
+        kontenPembeli.classList.remove('hidden');
       }
     }
 
@@ -463,7 +583,6 @@
 
     function bukaModalEdit(id) {
       if (!isKasirUnlocked) {
-        alert("🔒 Fitur ini terkunci! Silakan masuk ke 'Halaman Kasir' terlebih dahulu untuk memasukkan password otorisasi.");
         bukaModalLogin();
         return;
       }
@@ -491,12 +610,7 @@
       const harga = parseFloat(document.getElementById('editHargaBarang').value);
       const stok = parseInt(document.getElementById('editStokBarang').value);
 
-      if (!nama || isNaN(harga) || isNaN(stok)) {
-        alert("⚠️ Mohon isi semua field dengan benar!");
-        return;
-      }
-
-      showLoading(true, "Memperbarui produk di Spreadsheet...");
+      showLoading(true, "Memperbarui produk...");
 
       const params = new URLSearchParams({
         action: 'editProduk',
@@ -515,21 +629,13 @@
             alert("✅ Perubahan barang berhasil disimpan!");
             muatDataProdukFromSheets();
           } else {
-            alert("⚠️ Gagal memperbarui barang di Spreadsheet.");
+            alert("⚠️ Gagal memperbarui barang.");
           }
         })
         .catch(err => {
           showLoading(false);
           tutupModalEdit();
-          console.warn("Update offline/lokal.", err);
-          
-          const idx = produkList.findIndex(p => String(p.id) === String(id));
-          if (idx !== -1) {
-            produkList[idx] = { id, nama, harga, stok };
-            renderTabelKatalogAwal(produkList);
-            populateDropdownKasir(produkList);
-          }
-          alert("⚠️ Disimpan secara lokal (Spreadsheet tidak merespons).");
+          alert("⚠️ Gagal terhubung ke Spreadsheet.");
         });
     }
 
@@ -550,12 +656,7 @@
       const harga = parseFloat(document.getElementById('inputHargaBarang').value);
       const stok = parseInt(document.getElementById('inputStokBarang').value);
 
-      if (!nama || isNaN(harga) || isNaN(stok)) {
-        alert("⚠️ Silakan isi seluruh data produk dengan benar!");
-        return;
-      }
-
-      showLoading(true, "Menyimpan barang baru ke Spreadsheet...");
+      showLoading(true, "Menyimpan barang baru...");
 
       const params = new URLSearchParams({
         action: 'tambahProduk',
@@ -568,7 +669,7 @@
         .then(res => res.json())
         .then(res => {
           showLoading(false);
-          alert("✅ Barang berhasil ditambahkan ke Spreadsheet!");
+          alert("✅ Barang berhasil ditambahkan!");
           document.getElementById('inputNamaBarang').value = '';
           document.getElementById('inputHargaBarang').value = '';
           document.getElementById('inputStokBarang').value = '';
@@ -576,17 +677,7 @@
         })
         .catch(err => {
           showLoading(false);
-          console.warn("Gagal terhubung ke Apps Script, menambahkan ke lokal.", err);
-          
-          const newId = String(Date.now());
-          produkList.push({ id: newId, nama: nama, harga: harga, stok: stok });
-          renderTabelKatalogAwal(produkList);
-          populateDropdownKasir(produkList);
-          
-          document.getElementById('inputNamaBarang').value = '';
-          document.getElementById('inputHargaBarang').value = '';
-          document.getElementById('inputStokBarang').value = '';
-          alert("⚠️ Disimpan secara lokal (Spreadsheet tidak merespons).");
+          alert("⚠️ Gagal menyimpan ke Spreadsheet.");
         });
     }
 
@@ -602,13 +693,11 @@
       if (!produk) return;
 
       const itemAda = keranjang.find(item => String(item.id) === String(id));
-
       if (itemAda) {
         itemAda.qty++;
       } else {
         keranjang.push({ ...produk, qty: 1 });
       }
-
       updateKeranjangUI();
     }
 
@@ -664,14 +753,18 @@
     function hitungKembalian() {
       const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
       const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-      const kembalian = bayar - total;
+      const selisih = bayar - total;
 
       const elKembali = document.getElementById('textKembalian');
-      if (kembalian >= 0) {
-        elKembali.innerText = `Rp ${kembalian.toLocaleString('id-ID')}`;
+      const labelKembaliOrHutang = document.getElementById('labelKembalianOrHutang');
+
+      if (selisih >= 0) {
+        labelKembaliOrHutang.innerText = "Kembalian:";
+        elKembali.innerText = `Rp ${selisih.toLocaleString('id-ID')}`;
         elKembali.className = "font-extrabold text-emerald-600";
       } else {
-        elKembali.innerText = `Kurang Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`;
+        labelKembaliOrHutang.innerText = "HUTANG:";
+        elKembali.innerText = `Rp ${Math.abs(selisih).toLocaleString('id-ID')}`;
         elKembali.className = "font-extrabold text-rose-500";
       }
     }
@@ -680,156 +773,640 @@
       keranjang = [];
       document.getElementById('inputBayar').value = '';
       updateKeranjangUI();
-    }let bluetoothDevice = null;
-let bluetoothCharacteristic = null;
-
-// Fungsi untuk menghubungkan ke printer Bluetooth
-async function konekPrinterBluetooth() {
-  try {
-    showLoading(true, "Mencari Printer Bluetooth...");
-    bluetoothDevice = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-    });
-
-    const server = await bluetoothDevice.gatt.connect();
-    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-    
-    showLoading(false);
-    alert("✅ Printer Bluetooth Berhasil Terhubung!");
-  } catch (error) {
-    showLoading(false);
-    console.error("Gagal konek printer:", error);
-    alert("⚠️ Gagal terhubung ke printer. Pastikan Bluetooth aktif.");
-  }
-}
-
-// Fungsi mengirim perintah cetak teks dan QR Code ke printer thermal 58mm
-// Fungsi mengirim perintah cetak teks dan QR Code ke printer thermal 58mm secara aman (Chunked)
-async function cetakLangsungThermal(total, bayar, kembalian) {
-  if (!bluetoothCharacteristic) {
-    await konekPrinterBluetooth();
-    if (!bluetoothCharacteristic) return;
-  }
-
-  try {
-    showLoading(true, "Mencetak Struk...");
-    
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    const INIT = ESC + '@';
-    const CENTER = ESC + 'a' + '\x01';
-    const LEFT = ESC + 'a' + '\x00';
-    const BOLD_ON = ESC + 'E' + '\x01';
-    const BOLD_OFF = ESC + 'E' + '\x00';
-    const CUT = GS + 'V' + '\x41' + '\x03';
-
-    let cetakText = INIT;
-    cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-    cetakText += "Jl. Raya Jagapura Lor - Nyibanda\n";
-    cetakText += "Solusi Kebutuhan Anda\n";
-    cetakText += "--------------------------------\n"; 
-    cetakText += LEFT;
-
-    // Looping item belanja dari array keranjang
-    keranjang.forEach(item => {
-      const subtotal = item.harga * item.qty;
-      cetakText += `${item.nama}\n`;
-      cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
-    });
-
-    cetakText += "--------------------------------\n";
-    cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
-    cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
-    cetakText += `KEMBALI  : Rp ${kembalian.toLocaleString('id-ID')}\n`;
-    cetakText += "--------------------------------\n";
-    cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
-
-    // === TAMBAHAN CATATAN KAKI & QR CODE ===
-    cetakText += "Kunjungi situs kami:\n\n";
-    
-    const qrUrl = "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/";
-    const storeLength = qrUrl.length + 3;
-    const pL = String.fromCharCode(storeLength % 256);
-    const pH = String.fromCharCode(Math.floor(storeLength / 256));
-
-    cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
-    cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
-    cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
-    cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
-    cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
-    
-    cetakText += "\n\n\n" + CUT;
-
-    const encoder = new TextEncoder();
-    const dataBytes = encoder.encode(cetakText);
-    
-    // === PENGIRIMAN DATA SECARA BERTAHAP (CHUNK) AGAR TIDAK OVERFLOW ===
-    const CHUNK_SIZE = 512; // Ukuran aman per paket Bluetooth
-    for (let i = 0; i < dataBytes.length; i += CHUNK_SIZE) {
-      const chunk = dataBytes.slice(i, i + CHUNK_SIZE);
-      await bluetoothCharacteristic.writeValue(chunk);
-      // Jeda kecil antar chunk untuk memberi waktu buffer printer memproses data
-      await new Promise(resolve => setTimeout(resolve, 50)); 
     }
 
-    showLoading(false);
-  } catch (error) {
-    showLoading(false);
-    console.error("Gagal mencetak:", error);
-    alert("⚠️ Gagal mencetak ke printer. Pastikan koneksi Bluetooth stabil.");
-  }
-}
-    
-// Fungsi validasi, hitung total, dan memproses pembayaran (Sudah Diperbaiki)
-async function prosesBayar() {
-  if (keranjang.length === 0) {
-    alert("⚠️ Keranjang belanja masih kosong!");
-    return;
-  }
+    function muatDataRekap() {
+      showLoading(true, "Mengambil data rekapitulasi...");
 
-  const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-  const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-  const kembalian = bayar - total;
+      fetch(`${API_URL}?action=getRekap`, { method: "GET", redirect: "follow" })
+        .then(res => res.json())
+        .then(res => {
+          showLoading(false);
+          if (res.success) {
+            cacheDataRekap = res;
+            renderRekapHarian(res.harian);
+            renderRekapBulanan(res.bulanan);
+            renderRekapPembeliBulanan(res.rekapPembeliBulanan);
+          } else {
+            alert("Gagal memuat rekap data.");
+          }
+        })
+        .catch(err => {
+          showLoading(false);
+          console.error(err);
+          alert("Terjadi kesalahan saat mengambil rekap.");
+        });
+    }
 
-  if (bayar < total) {
-    alert("⚠️ Uang yang diterima kurang dari total transaksi!");
-    return;
-  }
+    function renderRekapHarian(dataHarian) {
+      const container = document.getElementById('listRekapHarian');
+      container.innerHTML = '';
 
-  // Menunggu (await) proses kirim data cetak selesai sepenuhnya
-  await cetakLangsungThermal(total, bayar, kembalian);
-  
-  // Keranjang dikosongkan setelah proses di atas selesai menjamin item tercetak
-  kosongkanKeranjang();
-}
+      if (!dataHarian || dataHarian.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 rounded-2xl border text-center text-slate-400 text-xs">Belum ada data transaksi harian.</div>`;
+        return;
+      }
 
-// Fungsi memperbarui visual struk digital pada halaman HTML kasir
-function cetakStruk(total, bayar) {
-  document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID');
-  const strukBody = document.getElementById('strukItem');
-  strukBody.innerHTML = '';
+      dataHarian.forEach((h, index) => {
+        let listHtml = '';
+        h.listTransaksi.forEach(trx => {
+          let statusBayarHtml = "";
+          if (trx.kembali >= 0) {
+            statusBayarHtml = `<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Kembali: Rp ${trx.kembali.toLocaleString('id-ID')}</span>`;
+          } else {
+            statusBayarHtml = `<span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')}</span>`;
+          }
 
-  keranjang.forEach(item => {
-    strukBody.innerHTML += `
-      <tr class="py-0.5">
-        <td class="py-0.5" colspan="2">
-          <div class="font-bold">${item.nama}</div>
-          <div class="flex justify-between text-slate-600">
-            <span>${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
-            <span>Rp ${(item.harga * item.qty).toLocaleString('id-ID')}</span>
+          listHtml += `
+            <div class="py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-xs text-slate-800">👤 ${trx.pembeli}</span>
+                  <span class="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded border">⏰ ${trx.waktu}</span>
+                  ${statusBayarHtml}
+                </div>
+                <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
+              </div>
+              <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                Rp ${trx.total.toLocaleString('id-ID')}
+              </span>
+            </div>
+          `;
+        });
+
+        container.innerHTML += `
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="bg-slate-100/70 p-4 border-b border-slate-200/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h3 class="font-bold text-sm text-slate-800">📅 Tanggal: ${h.tanggal}</h3>
+                <p class="text-[11px] text-slate-500 font-medium">Total Transaksi: ${h.listTransaksi.length} pesanan</p>
+              </div>
+              <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="text-right">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block">Omset Harian</span>
+                  <span class="font-black text-sm text-emerald-700">Rp ${h.totalOmset.toLocaleString('id-ID')}</span>
+                </div>
+                <button onclick="cetakRekapSpesifik('harian', ${index})" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow">
+                  <span>🖨️</span> Cetak Rekap
+                </button>
+              </div>
+            </div>
+            <div class="p-4 space-y-2">
+              ${listHtml}
+            </div>
           </div>
-        </td>
-      </tr>
-    `;
-  });
+        `;
+      });
+    }
 
-      document.getElementById('strukTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
-      document.getElementById('strukBayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
-      document.getElementById('strukKembali').innerText = `Rp ${(bayar - total).toLocaleString('id-ID')}`;
+    function renderRekapBulanan(dataBulanan) {
+      const container = document.getElementById('listRekapBulanan');
+      container.innerHTML = '';
 
-      window.print();
+      if (!dataBulanan || dataBulanan.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 rounded-2xl border text-center text-slate-400 text-xs">Belum ada data transaksi bulanan.</div>`;
+        return;
+      }
+
+      dataBulanan.forEach((b, index) => {
+        let listHtml = '';
+        b.listTransaksi.forEach(trx => {
+          listHtml += `
+            <div class="py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-slate-800">👤 ${trx.pembeli}</span>
+                  <span class="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded border">📅 ${trx.tanggal}</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
+              </div>
+              <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                Rp ${trx.total.toLocaleString('id-ID')}
+              </span>
+            </div>
+          `;
+        });
+
+        container.innerHTML += `
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="bg-slate-100/70 p-4 border-b border-slate-200/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h3 class="font-bold text-sm text-slate-800">🗓️ Bulan: ${b.bulan}</h3>
+                <p class="text-[11px] text-slate-500 font-medium">Total Transaksi: ${b.listTransaksi.length} pesanan</p>
+              </div>
+              <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="text-right">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block">Omset Bulanan</span>
+                  <span class="font-black text-sm text-emerald-700">Rp ${b.totalOmset.toLocaleString('id-ID')}</span>
+                </div>
+                <button onclick="cetakRekapSpesifik('bulanan', ${index})" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow">
+                  <span>🖨️</span> Cetak Rekap
+                </button>
+              </div>
+            </div>
+            <div class="p-4 space-y-2">
+              ${listHtml}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderRekapPembeliBulanan(dataPembeliBulanan) {
+      const container = document.getElementById('listRekapPembeli');
+      container.innerHTML = '';
+
+      if (!dataPembeliBulanan || dataPembeliBulanan.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 rounded-2xl border text-center text-slate-400 text-xs">Belum ada data rekap per pembeli.</div>`;
+        return;
+      }
+
+      dataPembeliBulanan.forEach((pb, index) => {
+        let listHtml = '';
+        pb.listTransaksi.forEach(trx => {
+          let statusBayarHtml = "";
+          if (trx.kembali >= 0) {
+            statusBayarHtml = `<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} | Kembali: Rp ${trx.kembali.toLocaleString('id-ID')}</span>`;
+          } else {
+            statusBayarHtml = `<span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} | Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')}</span>`;
+          }
+
+          listHtml += `
+            <div class="py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+              <div>
+                <span class="font-semibold text-slate-700">📅 ${trx.tanggal} (${trx.waktu})</span>
+                <p class="text-slate-500 mt-0.5">🛒 ${trx.items}</p>
+                <div class="mt-1">${statusBayarHtml}</div>
+              </div>
+              <div class="text-right">
+                <span class="font-bold text-slate-800 block">Total: Rp ${trx.total.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        let hutangPiutangBadge = "";
+        if (pb.totalHutangPiutang < 0) {
+          hutangPiutangBadge = `<span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Sisa Hutang Keseluruhan: Rp ${Math.abs(pb.totalHutangPiutang).toLocaleString('id-ID')}</span>`;
+        } else {
+          hutangPiutangBadge = `<span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Status: Lunas / Lebih</span>`;
+        }
+
+        container.innerHTML += `
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="bg-slate-100/70 p-4 border-b border-slate-200/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-bold text-sm text-slate-900">👤 ${pb.pembeli}</h3>
+                  <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">Bulan: ${pb.bulan}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Total Pesanan: ${pb.listTransaksi.length} transaksi | ${hutangPiutangBadge}</p>
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+                <div class="text-right mr-2">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Belanja | Bayar</span>
+                  <span class="font-black text-xs text-emerald-700 block">Rp ${pb.totalBelanja.toLocaleString('id-ID')}</span>
+                  <span class="text-[11px] font-bold text-slate-600">Bayar: Rp ${pb.totalBayar.toLocaleString('id-ID')}</span>
+                </div>
+                <!-- Tombol Cetak PDF / Browser -->
+                <button onclick="cetakRekapSpesifik('pembeli', ${index})" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow" title="Cetak Standar">
+                  <span>🖨️</span> Cetak
+                </button>
+                <!-- Tombol Cetak Bluetooth Thermal -->
+                <button onclick="cetakBluetoothPembeli(${index})" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow" title="Cetak Printer Bluetooth">
+                  <span>🦷</span> Thermal
+                </button>
+              </div>
+            </div>
+            <div class="p-4 space-y-2">
+              ${listHtml}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function cetakRekapSpesifik(tipe, index) {
+      let dataObj = null;
+      let judul = "";
+
+      if (tipe === 'harian') {
+        dataObj = cacheDataRekap.harian[index];
+        judul = `REKAP HARIAN - TANGGAL: ${dataObj.tanggal}`;
+        document.getElementById('printInfoWaktu').innerText = `Periode Tanggal: ${dataObj.tanggal}`;
+      } else if (tipe === 'bulanan') {
+        dataObj = cacheDataRekap.bulanan[index];
+        judul = `REKAP BULANAN - BULAN: ${dataObj.bulan}`;
+        document.getElementById('printInfoWaktu').innerText = `Periode Bulan: ${dataObj.bulan}`;
+      } else if (tipe === 'pembeli') {
+        dataObj = cacheDataRekap.rekapPembeliBulanan[index];
+        judul = `REKAP PER PEMBELI - ${dataObj.pembeli.toUpperCase()} (${dataObj.bulan})`;
+        document.getElementById('printInfoWaktu').innerText = `Nama Pelanggan: ${dataObj.pembeli} | Periode Bulan: ${dataObj.bulan}`;
+      }
+
+      document.getElementById('printJudulLaporan').innerText = judul;
+      document.getElementById('printTglCetak').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      let rowsHtml = '';
+      let grandTotal = 0;
+      let grandBayar = 0;
+
+      dataObj.listTransaksi.forEach((trx, i) => {
+        grandTotal += Number(trx.total);
+        grandBayar += Number(trx.bayar);
+        
+        let ketBayarPrint = `Bayar: Rp ${Number(trx.bayar).toLocaleString('id-ID')}`;
+        if (trx.kembali >= 0) {
+          ketBayarPrint += `<br><span style="color: green;">Kembali: Rp ${trx.kembali.toLocaleString('id-ID')}</span>`;
+        } else {
+          ketBayarPrint += `<br><span style="color: red;">Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')}</span>`;
+        }
+
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid #cbd5e1;">
+            <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
+            <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
+            <td style="padding: 8px; font-size: 11px; font-weight: bold;">${trx.pembeli}</td>
+            <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+            <td style="padding: 8px; text-align: right; font-size: 11px;">${ketBayarPrint}</td>
+            <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+          </tr>
+        `;
+      });
+
+      const tabelHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a; text-transform: uppercase; font-size: 11px;">
+              <th style="padding: 8px; text-align: center; width: 40px;">No</th>
+              <th style="padding: 8px; text-align: left; width: 130px;">Waktu</th>
+              <th style="padding: 8px; text-align: left; width: 110px;">Pembeli</th>
+              <th style="padding: 8px; text-align: left;">Rincian Item</th>
+              <th style="padding: 8px; text-align: right; width: 120px;">Rincian Bayar</th>
+              <th style="padding: 8px; text-align: right; width: 110px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a; font-weight: bold; font-size: 12px;">
+              <td colspan="4" style="padding: 10px; text-align: right;">TOTAL KESELURUHAN :</td>
+              <td style="padding: 10px; text-align: right; color: #334155;">Bayar: Rp ${grandBayar.toLocaleString('id-ID')}</td>
+              <td style="padding: 10px; text-align: right; color: #047857;">Rp ${grandTotal.toLocaleString('id-ID')}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <p style="margin-top: 12px; font-size: 11px;">Jumlah Total Transaksi: <strong>${dataObj.listTransaksi.length} pesanan</strong></p>
+      `;
+
+      document.getElementById('printKontenTabel').innerHTML = tabelHtml;
+
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    }
+
+function cetakRekapSpesifik(tipe, index) {
+      let dataObj = null;
+      let judul = "";
+
+      if (tipe === 'harian') {
+        dataObj = cacheDataRekap.harian[index];
+        judul = `REKAP HARIAN - TANGGAL: ${dataObj.tanggal}`;
+        document.getElementById('printInfoWaktu').innerText = `Periode Tanggal: ${dataObj.tanggal}`;
+      } else if (tipe === 'bulanan') {
+        dataObj = cacheDataRekap.bulanan[index];
+        judul = `REKAP BULANAN - BULAN: ${dataObj.bulan}`;
+        document.getElementById('printInfoWaktu').innerText = `Periode Bulan: ${dataObj.bulan}`;
+      } else if (tipe === 'pembeli') {
+        dataObj = cacheDataRekap.rekapPembeliBulanan[index];
+        judul = `REKAP PER PEMBELI - ${dataObj.pembeli.toUpperCase()} (${dataObj.bulan})`;
+        document.getElementById('printInfoWaktu').innerText = `Nama Pelanggan: ${dataObj.pembeli} | Periode Bulan: ${dataObj.bulan}`;
+      }
+
+      document.getElementById('printJudulLaporan').innerText = judul;
+      document.getElementById('printTglCetak').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      let rowsHtml = '';
+      let grandTotal = 0;
+      let grandBayar = 0;
+      let grandKembaliHutang = 0; // <-- Variabel untuk menghitung total akumulasi kembali/hutang
+
+      // KONDISI KHUSUS UNTUK CETAK REKAP PER PEMBELI (Menampilkan Rincian Bayar & Hitungan Sisa)
+      if (tipe === 'pembeli') {
+        dataObj.listTransaksi.forEach((trx, i) => {
+          grandTotal += Number(trx.total);
+          grandBayar += Number(trx.bayar);
+          grandKembaliHutang += Number(trx.kembali); // Akumulasi nilai kembali/hutang per baris
+
+          let statusBayarCetak = "";
+          if (trx.kembali >= 0) {
+            statusBayarCetak = `Bayar: Rp ${Number(trx.bayar).toLocaleString('id-ID')}<br><span style="color: #047857; font-weight: bold;">Kembali: Rp ${trx.kembali.toLocaleString('id-ID')}</span>`;
+          } else {
+            statusBayarCetak = `Bayar: Rp ${Number(trx.bayar).toLocaleString('id-ID')}<br><span style="color: #e11d48; font-weight: bold;">Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')}</span>`;
+          }
+
+          rowsHtml += `
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+              <td style="padding: 8px; text-align: right; font-size: 11px;">${statusBayarCetak}</td>
+              <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+            </tr>
+          `;
+        });
+
+        // Menentukan label keterangan total akhir (Hutang atau Kembalian keseluruhan)
+        let infoKeseluruhanHtml = "";
+        if (grandKembaliHutang < 0) {
+          infoKeseluruhanHtml = `<span style="color: #e11d48;">Total Sisa Hutang: Rp ${Math.abs(grandKembaliHutang).toLocaleString('id-ID')}</span>`;
+        } else {
+          infoKeseluruhanHtml = `<span style="color: #047857;">Total Kembalian/Lebih: Rp ${grandKembaliHutang.toLocaleString('id-ID')}</span>`;
+        }
+
+        const tabelHtml = `
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a; text-transform: uppercase; font-size: 11px;">
+                <th style="padding: 8px; text-align: center; width: 40px;">No</th>
+                <th style="padding: 8px; text-align: left; width: 130px;">Waktu</th>
+                <th style="padding: 8px; text-align: left;">Rincian Item</th>
+                <th style="padding: 8px; text-align: right; width: 140px;">Rincian Bayar</th>
+                <th style="padding: 8px; text-align: right; width: 110px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+            <tfoot>
+              <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a; font-weight: bold; font-size: 11px;">
+                <td colspan="3" style="padding: 10px; text-align: right;">RINGKASAN PEMBAYARAN :<br><span style="font-size: 10px; font-weight: normal; color: #475569;">Total Bayar Keseluruhan: Rp ${grandBayar.toLocaleString('id-ID')}</span><br>${infoKeseluruhanHtml}</td>
+                <td colspan="2" style="padding: 10px; text-align: right; font-size: 12px;">
+                  TOTAL BELANJA:<br>
+                  <span style="color: #047857; font-size: 14px;">Rp ${grandTotal.toLocaleString('id-ID')}</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+          <p style="margin-top: 12px; font-size: 11px;">Jumlah Total Transaksi: <strong>${dataObj.listTransaksi.length} pesanan</strong></p>
+        `;
+        document.getElementById('printKontenTabel').innerHTML = tabelHtml;
+
+      } else {
+        // UNTUK CETAK HARIAN ATAU BULANAN BIASA
+        dataObj.listTransaksi.forEach((trx, i) => {
+          grandTotal += Number(trx.total);
+          rowsHtml += `
+            <tr style="border-bottom: 1px solid #cbd5e1;">
+              <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
+              <td style="padding: 8px; font-size: 11px; font-weight: bold;">${trx.pembeli}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+              <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+            </tr>
+          `;
+        });
+
+        const tabelHtml = `
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a; text-transform: uppercase; font-size: 11px;">
+                <th style="padding: 8px; text-align: center; width: 40px;">No</th>
+                <th style="padding: 8px; text-align: left; width: 140px;">Waktu</th>
+                <th style="padding: 8px; text-align: left; width: 120px;">Pembeli</th>
+                <th style="padding: 8px; text-align: left;">Rincian Item</th>
+                <th style="padding: 8px; text-align: right; width: 120px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+            <tfoot>
+              <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a; font-weight: bold; font-size: 12px;">
+                <td colspan="4" style="padding: 10px; text-align: right;">TOTAL KESELURUHAN :</td>
+                <td style="padding: 10px; text-align: right; color: #047857;">Rp ${grandTotal.toLocaleString('id-ID')}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p style="margin-top: 12px; font-size: 11px;">Jumlah Total Transaksi: <strong>${dataObj.listTransaksi.length} pesanan</strong></p>
+        `;
+        document.getElementById('printKontenTabel').innerHTML = tabelHtml;
+      }
+
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    }
+
+    let bluetoothDevice = null;
+    let bluetoothCharacteristic = null;
+
+    async function konekPrinterBluetooth() {
+      try {
+        showLoading(true, "Mencari Printer Bluetooth...");
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        });
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+        bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        
+        showLoading(false);
+        alert("✅ Printer Bluetooth Berhasil Terhubung!");
+      } catch (error) {
+        showLoading(false);
+        console.error(error);
+        alert("⚠️ Gagal terhubung ke printer.");
+      }
+    }
+
+    async function cetakLangsungThermal(namaPembeli, total, bayar, selisih) {
+      if (!bluetoothCharacteristic) {
+        await konekPrinterBluetooth();
+        if (!bluetoothCharacteristic) return;
+      }
+
+      try {
+        showLoading(true, "Mencetak Struk...");
+        
+        const ESC = '\x1B';
+        const GS = '\x1D';
+        const INIT = ESC + '@';
+        const CENTER = ESC + 'a' + '\x01';
+        const LEFT = ESC + 'a' + '\x00';
+        const BOLD_ON = ESC + 'E' + '\x01';
+        const BOLD_OFF = ESC + 'E' + '\x00';
+        const CUT = GS + 'V' + '\x41' + '\x03';
+
+        let cetakText = INIT;
+        cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+        cetakText += "Jl. Raya Jagapura Lor - Nyibanda\n";
+        cetakText += "Solusi Kebutuhan Anda\n";
+        cetakText += "--------------------------------\n"; 
+        cetakText += LEFT;
+        cetakText += `Pelanggan : ${namaPembeli}\n`;
+        cetakText += `Tanggal   : ${new Date().toLocaleString('id-ID')}\n`;
+        cetakText += "--------------------------------\n";
+
+        keranjang.forEach(item => {
+          const subtotal = item.harga * item.qty;
+          cetakText += `${item.nama}\n`;
+          cetakText += `  ${item.qty} x ${item.harga.toLocaleString('id-ID')}   Rp ${subtotal.toLocaleString('id-ID')}\n`;
+        });
+
+        cetakText += "--------------------------------\n";
+        cetakText += `TOTAL    : Rp ${total.toLocaleString('id-ID')}\n`;
+        cetakText += `BAYAR    : Rp ${bayar.toLocaleString('id-ID')}\n`;
+        
+        if (selisih >= 0) {
+          cetakText += `KEMBALI  : Rp ${selisih.toLocaleString('id-ID')}\n`;
+        } else {
+          cetakText += `HUTANG   : Rp ${Math.abs(selisih).toLocaleString('id-ID')}\n`;
+        }
+        
+        cetakText += "--------------------------------\n";
+        cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
+        cetakText += "Kunjungi situs kami:\n\n";
+    
+        const qrUrl = "https://gjos4836-lang.github.io/LANANG-2-BAHAGIA/";
+        const storeLength = qrUrl.length + 3;
+        const pL = String.fromCharCode(storeLength % 256);
+        const pH = String.fromCharCode(Math.floor(storeLength / 256));
+
+        cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
+        cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
+        cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
+        cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
+        cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
+        cetakText += "\n\n\n" + CUT;
+
+        const encoder = new TextEncoder();
+        const dataBytes = encoder.encode(cetakText);
+        
+        const CHUNK_SIZE = 512; 
+        for (let i = 0; i < dataBytes.length; i += CHUNK_SIZE) {
+          const chunk = dataBytes.slice(i, i + CHUNK_SIZE);
+          await bluetoothCharacteristic.writeValue(chunk);
+          await new Promise(resolve => setTimeout(resolve, 50)); 
+        }
+
+        showLoading(false);
+      } catch (error) {
+        showLoading(false);
+        console.error(error);
+        alert("⚠️ Gagal mencetak ke printer.");
+      }
+    }
+    
+function cetakBluetoothPembeli(index) {
+      let pb = cacheDataRekap.rekapPembeliBulanan[index];
+      if (!pb) return;
+
+      // Pastikan fungsi penghubung bluetooth atau fungsi cetak ESC/POS Anda sudah tersedia di aplikasi
+      // Contoh format teks untuk printer thermal (lebar umumnya 32-38 karakter)
+      let textPrint = "";
+      textPrint += "================================\n";
+      textPrint += "       REKAP PEMBELANJAAN       \n";
+      textPrint += "================================\n";
+      textPrint += `Nama   : ${pb.pembeli}\n`;
+      textPrint += `Periode: ${pb.bulan}\n`;
+      textPrint += `Total  : ${pb.listTransaksi.length} Transaksi\n`;
+      textPrint += "--------------------------------\n";
+
+      pb.listTransaksi.forEach((trx, i) => {
+        textPrint += `${i + 1}. Tgl: ${trx.tanggal} ${trx.waktu}\n`;
+        textPrint += `   Item: ${trx.items}\n`;
+        textPrint += `   Total: Rp ${trx.total.toLocaleString('id-ID')}\n`;
+        if (trx.kembali >= 0) {
+          textPrint += `   Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} (Kembali)\n`;
+        } else {
+          textPrint += `   Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} (Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')})\n`;
+        }
+        textPrint += "--------------------------------\n";
+      });
+
+      let grandKembaliHutang = pb.totalHutangPiutang;
+      textPrint += `Total Belanja : Rp ${pb.totalBelanja.toLocaleString('id-ID')}\n`;
+      textPrint += `Total Bayar   : Rp ${pb.totalBayar.toLocaleString('id-ID')}\n`;
+      if (grandKembaliHutang < 0) {
+        textPrint += `SISA HUTANG   : Rp ${Math.abs(grandKembaliHutang).toLocaleString('id-ID')}\n`;
+      } else {
+        textPrint += `KEMBALIAN/LUNAS: Rp ${grandKembaliHutang.toLocaleString('id-ID')}\n`;
+      }
+      textPrint += "================================\n";
+      textPrint += "     TERIMA KASIH TELAH       \n";
+      textPrint += "        BERBELANJA              \n";
+      textPrint += "================================\n\n\n";
+
+      // Jika aplikasi Anda menggunakan fungsi global Bluetooth bawaan (seperti Android Interface / Web Bluetooth)
+      if (window.Android && window.Android.printBluetooth) {
+        // Integrasi jika dibungkus WebView Android
+        window.Android.printBluetooth(textPrint);
+      } else if (typeof kirimKePrinterBluetooth === 'function') {
+        // Memanggil fungsi bluetooth kustom yang mungkin sudah ada di proyek Anda
+        kirimKePrinterBluetooth(textPrint);
+      } else {
+        // Fallback: Jika menggunakan Web Bluetooth API standar
+        alert("Fitur cetak Bluetooth langsung aktif. Pastikan perangkat Anda mendukung Web Bluetooth atau terhubung kebridge Android.");
+        console.log(textPrint);
+      }
+    }
+
+    async function prosesBayar() {
+      if (keranjang.length === 0) {
+        alert("⚠️ Keranjang belanja masih kosong!");
+        return;
+      }
+
+      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+      const namaPembeli = document.getElementById('inputNamaPembeli').value.trim() || "Umum";
+      const selisih = bayar - total;
+
+      const rincianItemsText = keranjang.map(i => `${i.nama} (${i.qty}x)`).join(", ");
+      const cartDataJson = JSON.stringify(keranjang.map(i => ({
+        id: i.id,
+        nama: i.nama,
+        qty: i.qty
+      })));
+
+      showLoading(true, "Menyimpan transaksi ke Spreadsheet...");
+
+      try {
+        const params = new URLSearchParams({
+          action: 'tambahTransaksi',
+          namaPembeli: namaPembeli,
+          items: rincianItemsText,
+          total: total,
+          bayar: bayar,
+          kembali: selisih,
+          cartData: cartDataJson
+        });
+
+        const res = await fetch(`${API_URL}?${params.toString()}`, { 
+          method: 'GET', 
+          redirect: 'follow' 
+        });
+        const result = await res.json();
+
+        showLoading(false);
+        if (!result.success) {
+          alert("⚠️ Catatan: " + (result.message || "Gagal update stok"));
+        }
+      } catch (err) {
+        showLoading(false);
+        console.error(err);
+      }
+
+      await cetakLangsungThermal(namaPembeli, total, bayar, selisih);
+
+      kosongkanKeranjang();
+      document.getElementById('inputNamaPembeli').value = '';
+      muatDataProdukFromSheets();
     }
   </script>
 </body>
