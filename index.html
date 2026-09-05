@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LANANG 2 BAHAGIA - Solusi Kebutuhan Rumah Anda</title>
+  <title>LANANG 2 BAHAGIA - POS & Rekap</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -20,9 +20,12 @@
     @media print {
       @page { margin: 10mm; size: A4 portrait; }
       body * { visibility: hidden; }
-      #areaPrintRekap, #areaPrintRekap * { visibility: visible; }
+      #areaPrintRekap, #areaPrintRekap *, #areaStruk, #areaStruk * { visibility: visible; }
       #areaPrintRekap { 
         position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0;
+      }
+      #areaStruk {
+        position: absolute; left: 0; top: 0; width: 58mm; padding: 0; margin: 0;
       }
       .no-print { display: none !important; }
     }
@@ -130,6 +133,12 @@
           <label class="block text-xs font-bold text-slate-600 mb-1">Nominal Pembayaran (Rp)</label>
           <input type="number" id="inputBayarUtang" required min="1" placeholder="Masukkan jumlah bayar..." oninput="hitungSisaUtangBaru()" 
                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Catatan Pembayaran (Opsional)</label>
+          <input type="text" id="inputCatatanUtang" placeholder="Contoh: Cicilan ke-1" 
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
 
         <div class="text-xs font-semibold text-slate-600 flex justify-between bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
@@ -290,11 +299,18 @@
             </div>
           </div>
 
-          <!-- Input Nama Pembeli -->
-          <div class="mb-4">
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Pembeli</label>
-            <input type="text" id="inputNamaPembeli" placeholder="Contoh: Bpk. Budi (Opsional)" 
-                   class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+          <!-- Input Nama Pembeli & Catatan -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Pembeli</label>
+              <input type="text" id="inputNamaPembeli" placeholder="Contoh: Bpk. Budi (Opsional)" 
+                     class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Catatan Transaksi</label>
+              <input type="text" id="inputCatatanTransaksi" placeholder="Contoh: Garansi 3 Hari / DP Rp 10rb" 
+                     class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
           </div>
 
           <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/60 space-y-4">
@@ -418,6 +434,7 @@
       <p class="text-[8px] mt-0.5">Solusi Kebutuhan Anda</p>
       <p id="strukTanggal" class="text-[8px] mt-1 text-slate-600"></p>
       <p id="strukNamaPembeli" class="text-[9px] font-bold mt-1 text-left">Pembeli: -</p>
+      <p id="strukCatatan" class="text-[8px] italic text-left mt-0.5">Catatan: -</p>
     </div>
     
     <table class="w-full mb-2">
@@ -816,11 +833,108 @@
     function kosongkanKeranjang() {
       keranjang = [];
       document.getElementById('inputBayar').value = '';
+      document.getElementById('inputNamaPembeli').value = '';
+      document.getElementById('inputCatatanTransaksi').value = '';
       updateKeranjangUI();
     }
 
+    async function prosesBayar() {
+      if (keranjang.length === 0) {
+        alert("⚠️ Keranjang belanja masih kosong!");
+        return;
+      }
+
+      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
+      const selisih = bayar - total;
+      const namaPembeli = document.getElementById('inputNamaPembeli').value.trim() || "Umum";
+      const catatanText = document.getElementById('inputCatatanTransaksi').value.trim() || "-";
+
+      const rincianItems = keranjang.map(i => `${i.nama} (${i.qty}x)`).join(", ");
+      const cartDataJson = JSON.stringify(keranjang.map(i => ({ id: i.id, nama: i.nama, qty: i.qty })));
+
+      showLoading(true, "Menyimpan Transaksi...");
+
+      try {
+        const params = new URLSearchParams({
+          action: 'tambahTransaksi',
+          namaPembeli: namaPembeli,
+          items: rincianItems,
+          total: total,
+          bayar: bayar,
+          kembali: selisih,
+          catatan: catatanText,
+          cartData: cartDataJson
+        });
+
+        const res = await fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: 'follow' });
+        const result = await res.json();
+
+        showLoading(false);
+
+        if (result.success) {
+          alert("✅ Transaksi Berhasil Disimpan!");
+
+          // Opsi Cetak Struk Bluetooth jika terhubung
+          if (bluetoothCharacteristic) {
+            cetakLangsungThermal(namaPembeli, total, bayar, selisih, catatanText);
+          } else {
+            cetakStrukWeb(namaPembeli, total, bayar, selisih, catatanText);
+          }
+
+          kosongkanKeranjang();
+          muatDataProdukFromSheets();
+        } else {
+          alert("⚠️ Gagal menyimpan transaksi.");
+        }
+      } catch (err) {
+        showLoading(false);
+        alert("⚠️ Terjadi masalah koneksi.");
+      }
+    }
+
+    function cetakStrukWeb(namaPembeli, total, bayar, selisih, catatan) {
+      document.getElementById('strukTanggal').innerText = new Date().toLocaleString('id-ID');
+      document.getElementById('strukNamaPembeli').innerText = `Pembeli: ${namaPembeli}`;
+      document.getElementById('strukCatatan').innerText = `Catatan: ${catatan}`;
+
+      const tbody = document.getElementById('strukItem');
+      tbody.innerHTML = '';
+
+      keranjang.forEach(item => {
+        const subtotal = item.harga * item.qty;
+        tbody.innerHTML += `
+          <tr class="py-1">
+            <td class="py-1">
+              <div>${item.nama}</div>
+              <div class="text-[8px] text-slate-500">${item.qty} x Rp ${item.harga.toLocaleString('id-ID')}</div>
+            </td>
+            <td class="text-right font-bold py-1">Rp ${subtotal.toLocaleString('id-ID')}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('strukTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+      document.getElementById('strukBayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
+
+      const labelKembaliOrHutang = document.getElementById('strukLabelKembaliOrHutang');
+      const elKembali = document.getElementById('strukKembali');
+
+      if (selisih >= 0) {
+        labelKembaliOrHutang.innerText = "KEMBALI";
+        elKembali.innerText = `Rp ${selisih.toLocaleString('id-ID')}`;
+      } else {
+        labelKembaliOrHutang.innerText = "HUTANG";
+        elKembali.innerText = `Rp ${Math.abs(selisih).toLocaleString('id-ID')}`;
+      }
+
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    }
+
     function muatDataRekap() {
-      showLoading(true, "Merekap data transaksi secara lengkap...");
+      showLoading(true, "Merekap data transaksi...");
       isDataRekapLoaded = false;
 
       fetch(`${API_URL}?action=getRekap`, { method: "GET", redirect: "follow" })
@@ -850,7 +964,7 @@
 
     function pastikanDataRekapSiap(callback) {
       if (!isDataRekapLoaded || !cacheDataRekap) {
-        showLoading(true, "Memuat ulang data rekap agar lengkap...");
+        showLoading(true, "Memuat data rekap...");
         fetch(`${API_URL}?action=getRekap`, { method: "GET", redirect: "follow" })
           .then(res => res.json())
           .then(res => {
@@ -864,12 +978,12 @@
               isDataRekapLoaded = true;
               callback();
             } else {
-              alert("⚠️ Gagal memuat data lengkap untuk pencetakan.");
+              alert("⚠️ Gagal memuat data pencetakan.");
             }
           })
           .catch(err => {
             showLoading(false);
-            alert("⚠️ Koneksi gagal. Pastikan terhubung internet.");
+            alert("⚠️ Koneksi gagal.");
           });
       } else {
         callback();
@@ -904,6 +1018,7 @@
                   ${statusBayarHtml}
                 </div>
                 <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
+                <p class="text-[11px] text-slate-500 italic mt-0.5">📝 <strong>Catatan:</strong> ${trx.catatan || '-'}</p>
               </div>
               <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                 Rp ${trx.total.toLocaleString('id-ID')}
@@ -960,6 +1075,7 @@
                   <span class="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded border">📅 ${trx.tanggal}</span>
                 </div>
                 <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
+                <p class="text-[11px] text-slate-500 italic mt-0.5">📝 <strong>Catatan:</strong> ${trx.catatan || '-'}</p>
               </div>
               <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                 Rp ${trx.total.toLocaleString('id-ID')}
@@ -1020,6 +1136,7 @@
               <div>
                 <span class="font-semibold text-slate-700">📅 ${trx.tanggal} (${trx.waktu})</span>
                 <p class="text-slate-500 mt-0.5">🛒 ${trx.items}</p>
+                <p class="text-[11px] text-slate-500 italic">📝 <strong>Catatan:</strong> ${trx.catatan || '-'}</p>
                 <div class="mt-1">${statusBayarHtml}</div>
               </div>
               <div class="text-right">
@@ -1036,7 +1153,6 @@
           const sisaUtangAbs = Math.abs(pb.totalHutangPiutang);
           hutangPiutangBadge = `<span class="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Sisa Hutang Keseluruhan: Rp ${sisaUtangAbs.toLocaleString('id-ID')}</span>`;
           
-          // Tombol Bayar Utang khusus pelanggan berutang
           tombolBayarUtangHtml = `
             <button onclick="bukaModalBayarUtang('${pb.pembeli}', ${sisaUtangAbs})" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow" title="Bayar Utang">
               <span>💳</span> Bayar Utang
@@ -1087,6 +1203,7 @@
       document.getElementById('textUtangPelanggan').innerText = namaPembeli;
       document.getElementById('textUtangSisa').innerText = `Rp ${Number(sisaUtang).toLocaleString('id-ID')}`;
       document.getElementById('inputBayarUtang').value = '';
+      document.getElementById('inputCatatanUtang').value = '';
       document.getElementById('textUtangBaru').innerText = `Rp ${Number(sisaUtang).toLocaleString('id-ID')}`;
 
       document.getElementById('bayarUtangModal').classList.remove('hidden');
@@ -1118,6 +1235,7 @@
       const namaPembeli = document.getElementById('utangNamaPembeli').value;
       const nominalBayar = parseFloat(document.getElementById('inputBayarUtang').value) || 0;
       const sisaLama = parseFloat(document.getElementById('utangTotalSisa').value) || 0;
+      const catatanBayar = document.getElementById('inputCatatanUtang').value.trim() || "Pelunasan Utang";
 
       if (nominalBayar <= 0) {
         alert("⚠️ Nominal pembayaran harus lebih dari 0!");
@@ -1128,16 +1246,17 @@
 
       const sisaAkhir = sisaLama - nominalBayar;
       const rincianItemsText = `PELUNASAN UTANG (Sisa awal: Rp ${sisaLama.toLocaleString('id-ID')})`;
-      const cartDataJson = JSON.stringify([]); // Tidak mengurangi stok barang
+      const cartDataJson = JSON.stringify([]);
 
       try {
         const params = new URLSearchParams({
           action: 'tambahTransaksi',
           namaPembeli: namaPembeli,
           items: rincianItemsText,
-          total: 0, // Total transaksi pelunasan = 0, bayar dihitung murni untuk memotong hutang
+          total: 0,
           bayar: nominalBayar,
-          kembali: nominalBayar, // Nilai positif menambah akumulasi bayar
+          kembali: nominalBayar,
+          catatan: catatanBayar,
           cartData: cartDataJson
         });
 
@@ -1152,9 +1271,8 @@
 
         alert(`✅ Pembayaran utang sebesar Rp ${nominalBayar.toLocaleString('id-ID')} untuk ${namaPembeli} berhasil disimpan!`);
 
-        // Cetak Bukti Pelunasan Jika Bluetooth Terhubung
         if (bluetoothCharacteristic) {
-          cetakThermalPelunasanUtang(namaPembeli, sisaLama, nominalBayar, sisaAkhir);
+          cetakThermalPelunasanUtang(namaPembeli, sisaLama, nominalBayar, sisaAkhir, catatanBayar);
         }
 
         muatDataRekap();
@@ -1165,7 +1283,7 @@
       }
     }
 
-    async function cetakThermalPelunasanUtang(namaPembeli, sisaAwal, bayar, sisaAkhir) {
+    async function cetakThermalPelunasanUtang(namaPembeli, sisaAwal, bayar, sisaAkhir, catatan) {
       const ESC = '\x1B';
       const GS = '\x1D';
       const INIT = ESC + '@';
@@ -1183,6 +1301,7 @@
       cetakText += LEFT;
       cetakText += `Pelanggan : ${namaPembeli}\n`;
       cetakText += `Tanggal   : ${new Date().toLocaleString('id-ID')}\n`;
+      cetakText += `Catatan   : ${catatan}\n`;
       cetakText += "--------------------------------\n";
       cetakText += `Utang Awal  : Rp ${sisaAwal.toLocaleString('id-ID')}\n`;
       cetakText += `Bayar       : Rp ${bayar.toLocaleString('id-ID')}\n`;
@@ -1198,20 +1317,7 @@
       }
 
       cetakText += "--------------------------------\n";
-      cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
-      cetakText += "Kunjungi situs kami:\n\n";
-    
-        const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
-        const storeLength = qrUrl.length + 3;
-        const pL = String.fromCharCode(storeLength % 256);
-        const pH = String.fromCharCode(Math.floor(storeLength / 256));
-
-        cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
-        cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
-        cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
-        cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
-        cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
-        cetakText += "\n\n\n" + CUT;
+      cetakText += CENTER + "*** TERIMA KASIH ***\n\n\n" + CUT;
 
       await kirimDataRawKePrinter(cetakText);
     }
@@ -1235,7 +1341,7 @@
       }
 
       if (!dataObj) {
-        alert("⚠️ Data rekap belum lengkap atau tidak ditemukan.");
+        alert("⚠️ Data rekap belum lengkap.");
         return;
       }
 
@@ -1264,7 +1370,7 @@
             <tr style="border-bottom: 1px solid #cbd5e1;">
               <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
               <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
-              <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.items}<br><small style="color:#64748b;">Catatan: ${trx.catatan || '-'}</small></td>
               <td style="padding: 8px; text-align: right; font-size: 11px;">${statusBayarCetak}</td>
               <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
             </tr>
@@ -1284,7 +1390,7 @@
               <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a; text-transform: uppercase; font-size: 11px;">
                 <th style="padding: 8px; text-align: center; width: 40px;">No</th>
                 <th style="padding: 8px; text-align: left; width: 130px;">Waktu</th>
-                <th style="padding: 8px; text-align: left;">Rincian Item</th>
+                <th style="padding: 8px; text-align: left;">Rincian Item & Catatan</th>
                 <th style="padding: 8px; text-align: right; width: 140px;">Rincian Bayar</th>
                 <th style="padding: 8px; text-align: right; width: 110px;">Total</th>
               </tr>
@@ -1314,7 +1420,7 @@
               <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
               <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
               <td style="padding: 8px; font-size: 11px; font-weight: bold;">${trx.pembeli}</td>
-              <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+              <td style="padding: 8px; font-size: 11px;">${trx.items}<br><small style="color:#64748b;">Catatan: ${trx.catatan || '-'}</small></td>
               <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
             </tr>
           `;
@@ -1327,7 +1433,7 @@
                 <th style="padding: 8px; text-align: center; width: 40px;">No</th>
                 <th style="padding: 8px; text-align: left; width: 140px;">Waktu</th>
                 <th style="padding: 8px; text-align: left; width: 120px;">Pembeli</th>
-                <th style="padding: 8px; text-align: left;">Rincian Item</th>
+                <th style="padding: 8px; text-align: left;">Rincian Item & Catatan</th>
                 <th style="padding: 8px; text-align: right; width: 120px;">Total</th>
               </tr>
             </thead>
@@ -1374,7 +1480,6 @@
       }
     }
 
-    // FUNGSI UTAMA PENGECEKAN BUFFER: Kirim paket data kecil-kecil (Chunk) dengan jeda waktu aman untuk HP
     async function kirimDataRawKePrinter(cetakText) {
       if (!bluetoothCharacteristic) {
         await konekPrinterBluetooth();
@@ -1386,23 +1491,21 @@
         const encoder = new TextEncoder();
         const dataBytes = encoder.encode(cetakText);
         
-        // Ukuran paket diperkecil jadi 64 bytes agar buffer printer Bluetooth HP tidak penuh/crash
         const CHUNK_SIZE = 64; 
         for (let i = 0; i < dataBytes.length; i += CHUNK_SIZE) {
           const chunk = dataBytes.slice(i, i + CHUNK_SIZE);
           await bluetoothCharacteristic.writeValue(chunk);
-          // Beri jeda 80ms agar printer thermal portabel sempat mencetak baris sebelumnya
           await new Promise(resolve => setTimeout(resolve, 80)); 
         }
         showLoading(false);
       } catch (error) {
         showLoading(false);
-        alert("⚠️ Gagal mengirim data. Pastikan printer menyala & terhubung kembali.");
-        bluetoothCharacteristic = null; // Reset koneksi jika gagal
+        alert("⚠️ Gagal mengirim data.");
+        bluetoothCharacteristic = null;
       }
     }
 
-    async function cetakLangsungThermal(namaPembeli, total, bayar, selisih) {
+    async function cetakLangsungThermal(namaPembeli, total, bayar, selisih, catatan) {
       const ESC = '\x1B';
       const GS = '\x1D';
       const INIT = ESC + '@';
@@ -1415,11 +1518,11 @@
       let cetakText = INIT;
       cetakText += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
       cetakText += "Jl. Raya Jagapura Lor - Nyibanda\n";
-      cetakText += "Solusi Kebutuhan Anda\n";
       cetakText += "--------------------------------\n"; 
       cetakText += LEFT;
       cetakText += `Pelanggan : ${namaPembeli}\n`;
       cetakText += `Tanggal   : ${new Date().toLocaleString('id-ID')}\n`;
+      cetakText += `Catatan   : ${catatan}\n`;
       cetakText += "--------------------------------\n";
 
       keranjang.forEach(item => {
@@ -1440,22 +1543,24 @@
       
       cetakText += "--------------------------------\n";
       cetakText += CENTER + "*** TERIMA KASIH ***\n\n";
+      textPrint += "Kunjungi Situs Kami\n";
+      
       const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
-        const storeLength = qrUrl.length + 3;
-        const pL = String.fromCharCode(storeLength % 256);
-        const pH = String.fromCharCode(Math.floor(storeLength / 256));
+      const storeLength = qrUrl.length + 3;
+      const pL = String.fromCharCode(storeLength % 256);
+      const pH = String.fromCharCode(Math.floor(storeLength / 256));
 
-        cetakText += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
-        cetakText += GS + '(k' + '\x03\x00\x31\x43\x05';
-        cetakText += GS + '(k' + '\x03\x00\x31\x45\x30';
-        cetakText += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
-        cetakText += GS + '(k' + '\x03\x00\x31\x51\x30';
-        cetakText += "\n\n\n" + CUT;
+      textPrint += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
+      textPrint += GS + '(k' + '\x03\x00\x31\x43\x05';
+      textPrint += GS + '(k' + '\x03\x00\x31\x45\x30';
+      textPrint += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
+      textPrint += GS + '(k' + '\x03\x00\x31\x51\x30';
+      textPrint += "\n\n\n" + CUT;
 
       await kirimDataRawKePrinter(cetakText);
     }
-    
-   async function cetakBluetoothHarian(index) {
+
+    async function cetakBluetoothHarian(index) {
       let h = cacheDataRekap.harian[index];
       if (!h) {
         alert("⚠️ Data rekap harian belum lengkap.");
@@ -1473,9 +1578,7 @@
 
       let textPrint = INIT;
       textPrint += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-      textPrint += "Jl. Raya Jagapura Lor - Nyibanda\n";
-      textPrint += "Solusi Kebutuhan Anda\n";
-      textPrint += "REKAPITULASI TRANSAKSI HARIAN\n";
+      textPrint += "REKAP HARIAN\n";
       textPrint += "--------------------------------\n";
       textPrint += LEFT;
       textPrint += `Tanggal  : ${h.tanggal}\n`;
@@ -1485,19 +1588,15 @@
       h.listTransaksi.forEach((trx, i) => {
         textPrint += `${i + 1}. [${trx.waktu}] ${trx.pembeli}\n`;
         textPrint += `   Item: ${trx.items}\n`;
+        textPrint += `   Note: ${trx.catatan || '-'}\n`;
         textPrint += `   Total: Rp ${trx.total.toLocaleString('id-ID')}\n`;
-        if (trx.kembali >= 0) {
-          textPrint += `   Status: Lunas (Kembali Rp ${trx.kembali.toLocaleString('id-ID')})\n`;
-        } else {
-          textPrint += `   Status: Hutang (Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')})\n`;
-        }
         textPrint += "--------------------------------\n";
       });
 
       textPrint += CENTER + BOLD_ON;
       textPrint += `OMSET HARIAN: Rp ${h.totalOmset.toLocaleString('id-ID')}\n`;
       textPrint += BOLD_OFF + "--------------------------------\n";
-      textPrint += "      *** LAPORAN SELESAI ***\n\n";
+      textPrint += "    *** LAPORAN SELESAI ***\n\n";
       textPrint += "Kunjungi Situs Kami\n";
       
       const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
@@ -1533,9 +1632,7 @@
 
       let textPrint = INIT;
       textPrint += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-      textPrint += "Jl. Raya Jagapura Lor - Nyibanda\n";
-      textPrint += "Solusi Kebutuhan Anda\n";
-      textPrint += "REKAPITULASI OMSET BULANAN\n";
+      textPrint += "REKAP BULANAN\n";
       textPrint += "--------------------------------\n";
       textPrint += LEFT;
       textPrint += `Bulan    : ${b.bulan}\n`;
@@ -1552,7 +1649,7 @@
       textPrint += CENTER + BOLD_ON;
       textPrint += `OMSET BULANAN: Rp ${b.totalOmset.toLocaleString('id-ID')}\n`;
       textPrint += BOLD_OFF + "--------------------------------\n";
-      textPrint += "      *** LAPORAN SELESAI ***\n\n";
+      textPrint += "    *** LAPORAN SELESAI ***\n\n";
       textPrint += "Kunjungi Situs Kami\n";
       
       const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
@@ -1573,7 +1670,7 @@
     async function cetakBluetoothPembeli(index) {
       let pb = cacheDataRekap.rekapPembeliBulanan[index];
       if (!pb) {
-        alert("⚠️ Data rekap per pembeli belum lengkap.");
+        alert("⚠️ Data rekap pembeli belum lengkap.");
         return;
       }
 
@@ -1588,38 +1685,32 @@
 
       let textPrint = INIT;
       textPrint += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
-      textPrint += "Jl. Raya Jagapura Lor - Nyibanda\n";
-      textPrint += "Solusi Kebutuhan Anda\n";
-      textPrint += "REKAP BELANJA PELANGGAN\n";
+      textPrint += "REKAP PEMBELI\n";
       textPrint += "--------------------------------\n";
       textPrint += LEFT;
-      textPrint += `Nama   : ${pb.pembeli}\n`;
-      textPrint += `Periode: ${pb.bulan}\n`;
-      textPrint += `Total  : ${pb.listTransaksi.length} Transaksi\n`;
+      textPrint += `Pembeli  : ${pb.pembeli}\n`;
+      textPrint += `Bulan    : ${pb.bulan}\n`;
       textPrint += "--------------------------------\n";
 
       pb.listTransaksi.forEach((trx, i) => {
-        textPrint += `${i + 1}. Tgl: ${trx.tanggal} ${trx.waktu}\n`;
-        textPrint += `   Item: ${trx.items}\n`;
+        textPrint += `${i + 1}. [${trx.tanggal}] ${trx.items}\n`;
+        textPrint += `   Note : ${trx.catatan || '-'}\n`;
         textPrint += `   Total: Rp ${trx.total.toLocaleString('id-ID')}\n`;
-        if (trx.kembali >= 0) {
-          textPrint += `   Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} (Kembali)\n`;
-        } else {
-          textPrint += `   Bayar: Rp ${trx.bayar.toLocaleString('id-ID')} (Hutang: Rp ${Math.abs(trx.kembali).toLocaleString('id-ID')})\n`;
-        }
+        textPrint += `   Bayar: Rp ${trx.bayar.toLocaleString('id-ID')}\n`;
         textPrint += "--------------------------------\n";
       });
 
-      let grandKembaliHutang = pb.totalHutangPiutang;
-      textPrint += `Total Belanja : Rp ${pb.totalBelanja.toLocaleString('id-ID')}\n`;
-      textPrint += `Total Bayar   : Rp ${pb.totalBayar.toLocaleString('id-ID')}\n`;
-      if (grandKembaliHutang < 0) {
-        textPrint += `SISA HUTANG   : Rp ${Math.abs(grandKembaliHutang).toLocaleString('id-ID')}\n`;
+      textPrint += `TOTAL BELANJA : Rp ${pb.totalBelanja.toLocaleString('id-ID')}\n`;
+      textPrint += `TOTAL BAYAR   : Rp ${pb.totalBayar.toLocaleString('id-ID')}\n`;
+
+      if (pb.totalHutangPiutang < 0) {
+        textPrint += BOLD_ON + `SISA HUTANG   : Rp ${Math.abs(pb.totalHutangPiutang).toLocaleString('id-ID')}\n` + BOLD_OFF;
       } else {
-        textPrint += `KEMBALIAN     : Rp ${grandKembaliHutang.toLocaleString('id-ID')}\n`;
+        textPrint += BOLD_ON + `STATUS        : LUNAS\n` + BOLD_OFF;
       }
+
       textPrint += "--------------------------------\n";
-      textPrint += CENTER + "*** TERIMA KASIH ***\n\n";
+      textPrint += CENTER + "    *** LAPORAN SELESAI ***\n\n";
       textPrint += "Kunjungi Situs Kami\n";
       
       const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
@@ -1635,59 +1726,6 @@
       textPrint += "\n\n\n" + CUT;
 
       await kirimDataRawKePrinter(textPrint);
-    }
-    
-    async function prosesBayar() {
-      if (keranjang.length === 0) {
-        alert("⚠️ Data belanja masih kosong!");
-        return;
-      }
-
-      const total = keranjang.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const bayar = parseFloat(document.getElementById('inputBayar').value) || 0;
-      const namaPembeli = document.getElementById('inputNamaPembeli').value.trim() || "Umum";
-      const selisih = bayar - total;
-
-      const rincianItemsText = keranjang.map(i => `${i.nama} (${i.qty}x)`).join(", ");
-      const cartDataJson = JSON.stringify(keranjang.map(i => ({
-        id: i.id,
-        nama: i.nama,
-        qty: i.qty
-      })));
-
-      showLoading(true, "Menyimpan transaksi ke Database...");
-
-      try {
-        const params = new URLSearchParams({
-          action: 'tambahTransaksi',
-          namaPembeli: namaPembeli,
-          items: rincianItemsText,
-          total: total,
-          bayar: bayar,
-          kembali: selisih,
-          cartData: cartDataJson
-        });
-
-        const res = await fetch(`${API_URL}?${params.toString()}`, { 
-          method: 'GET', 
-          redirect: 'follow' 
-        });
-        const result = await res.json();
-
-        showLoading(false);
-        if (!result.success) {
-          alert("⚠️ Catatan: " + (result.message || "Gagal update stok"));
-        }
-      } catch (err) {
-        showLoading(false);
-      }
-
-      await cetakLangsungThermal(namaPembeli, total, bayar, selisih);
-
-      kosongkanKeranjang();
-      document.getElementById('inputNamaPembeli').value = '';
-      muatDataProdukFromSheets();
-      isDataRekapLoaded = false;
     }
   </script>
 </body>
