@@ -386,7 +386,7 @@
     </div>
 
     <!-- TAB MENU KOSONGAN -->
-    <div id="tabKosongan" class="hidden space-y-6 max-w-3xl mx-auto">
+    <div id="tabKosongan" class="hidden space-y-6 max-w-4xl mx-auto">
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
         <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
           <div class="flex items-center gap-2">
@@ -401,16 +401,44 @@
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1.5">Pilih Pelanggan (Status: KOSONGAN BELUM / BELUM SEMUA)</label>
-            <select id="selectPelangganKosonganMenu" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            <select id="selectPelangganKosonganMenu" onchange="tampilkanDetailKosonganPelanggan(this)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
               <option value="">-- Pilih Pelanggan Kosongan --</option>
             </select>
             <p class="text-[11px] text-slate-400 mt-1">Hanya menampilkan pelanggan yang memiliki catatan belum mengembalikan/melunasi kosongan.</p>
           </div>
+        </div>
+      </div>
 
-          <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 space-y-1">
-            <p class="font-bold">ℹ️ Informasi:</p>
-            <p>Menu ini mendeteksi otomatis pelanggan dari riwayat transaksi yang status kosongannya belum lengkap. Anda dapat menggunakan data ini untuk melakukan penagihan atau pengecekan tabung/item.</p>
+      <!-- KONTEN DETAIL DAFTAR KOSONGAN PELANGGAN TERPILIH -->
+      <div id="containerDetailKosongan" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 hidden space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h3 id="judulDetailKosongan" class="text-base font-bold text-slate-800">📋 Detail Kosongan: -</h3>
+            <p class="text-xs text-slate-500">Daftar transaksi dengan catatan kosongan belum/belum semua.</p>
           </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="cetakBiasaDetailKosongan()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow">
+              <span>🖨️</span> Print Biasa
+            </button>
+            <button onclick="cetakThermalDetailKosongan()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow">
+              <span>🦷</span> Print Thermal
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+                <th class="py-3 px-4">Tanggal / Waktu</th>
+                <th class="py-3 px-4">Rincian Item & Catatan Kosongan</th>
+                <th class="py-3 px-4 text-right">Total Transaksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabelDetailKosonganList" class="divide-y divide-slate-100 font-medium text-slate-700">
+              <!-- Detail transaksi kosongan pelanggan dirender di sini -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -513,6 +541,8 @@
 
     let cacheDataRekap = { harian: [], bulanan: [], rekapPembeliBulanan: [] };
     let isDataRekapLoaded = false;
+    let dataKosonganLengkapCache = [];
+    let selectedPelangganKosonganData = null;
 
     window.onload = function() {
       muatDataProdukFromSheets();
@@ -647,18 +677,41 @@
 
     function muatDataPelangganKosongan() {
       showLoading(true, "Memuat data pelanggan kosongan...");
-      fetch(`${API_URL}?action=getPelangganKosongan`, { method: "GET", redirect: "follow" })
+      fetch(`${API_URL}?action=getRekap`, { method: "GET", redirect: "follow" })
         .then(res => res.json())
         .then(res => {
           showLoading(false);
-          if (res.success && res.data) {
+          if (res.success && res.rekapPembeliBulanan) {
+            // Filter transaksi yang memiliki catatan kosongan belum / belum semua
+            let listPelangganMap = {};
+            
+            res.rekapPembeliBulanan.forEach(pb => {
+              let trxKosongan = pb.listTransaksi.filter(t => {
+                let itemUpper = (t.items || "").toUpperCase();
+                return itemUpper.includes("KOSONGAN BELUM") || itemUpper.includes("KOSONGAN BELUM SEMUA");
+              });
+
+              if (trxKosongan.length > 0) {
+                if (!listPelangganMap[pb.pembeli]) {
+                  listPelangganMap[pb.pembeli] = [];
+                }
+                listPelangganMap[pb.pembeli].push(...trxKosongan);
+              }
+            });
+
+            dataKosonganLengkapCache = Object.keys(listPelangganMap).map(nama => ({
+              pembeli: nama,
+              listTransaksi: listPelangganMap[nama]
+            }));
+
             const select = document.getElementById('selectPelangganKosonganMenu');
             select.innerHTML = '<option value="">-- Pilih Pelanggan Kosongan --</option>';
-            if (res.data.length === 0) {
-              select.innerHTML += '<option value="" disabled>Tidak ada data kosongan (Semua Lunas)</option>';
+            
+            if (dataKosonganLengkapCache.length === 0) {
+              select.innerHTML += '<option value="" disabled>Tidak ada data kosongan (Semua Lunas/Sudah)</option>';
             } else {
-              res.data.forEach(nama => {
-                select.innerHTML += `<option value="${nama}">${nama}</option>`;
+              dataKosonganLengkapCache.forEach((item, idx) => {
+                select.innerHTML += `<option value="${idx}">${item.pembeli} (${item.listTransaksi.length} Catatan)</option>`;
               });
             }
           }
@@ -667,6 +720,137 @@
           showLoading(false);
           console.error("Gagal memuat pelanggan kosongan", err);
         });
+    }
+
+    function tampilkanDetailKosonganPelanggan(selectEl) {
+      const idx = selectEl.value;
+      const containerDetail = document.getElementById('containerDetailKosongan');
+      const tbody = document.getElementById('tabelDetailKosonganList');
+      const judul = document.getElementById('judulDetailKosongan');
+
+      if (idx === "" || isNaN(idx)) {
+        containerDetail.classList.add('hidden');
+        selectedPelangganKosonganData = null;
+        return;
+      }
+
+      selectedPelangganKosonganData = dataKosonganLengkapCache[idx];
+      if (!selectedPelangganKosonganData) return;
+
+      judul.innerText = `📋 Detail Kosongan: ${selectedPelangganKosonganData.pembeli}`;
+      tbody.innerHTML = '';
+
+      selectedPelangganKosonganData.listTransaksi.forEach(trx => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3 px-4 text-slate-600 font-semibold">${trx.tanggal || '-'} (${trx.waktu || '-'})</td>
+            <td class="py-3 px-4 text-slate-800">${trx.items}</td>
+            <td class="py-3 px-4 text-right font-bold text-emerald-700">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+          </tr>
+        `;
+      });
+
+      containerDetail.classList.remove('hidden');
+    }
+
+    function cetakBiasaDetailKosongan() {
+      if (!selectedPelangganKosonganData) return;
+
+      document.getElementById('printJudulLaporan').innerText = `DAFTAR KOSONGAN BELUM LUNAS - ${selectedPelangganKosonganData.pembeli.toUpperCase()}`;
+      document.getElementById('printInfoWaktu').innerText = `Nama Pelanggan: ${selectedPelangganKosonganData.pembeli} | Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`;
+      document.getElementById('printTglCetak').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      let rowsHtml = '';
+      let grandTotal = 0;
+
+      selectedPelangganKosonganData.listTransaksi.forEach((trx, i) => {
+        grandTotal += Number(trx.total);
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid #cbd5e1;">
+            <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
+            <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
+            <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
+            <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
+          </tr>
+        `;
+      });
+
+      const tabelHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a; text-transform: uppercase; font-size: 11px;">
+              <th style="padding: 8px; text-align: center; width: 40px;">No</th>
+              <th style="padding: 8px; text-align: left; width: 140px;">Waktu Transaksi</th>
+              <th style="padding: 8px; text-align: left;">Rincian Item & Catatan Kosongan</th>
+              <th style="padding: 8px; text-align: right; width: 110px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a; font-weight: bold; font-size: 12px;">
+              <td colspan="3" style="padding: 10px; text-align: right;">TOTAL TRANSAKSI KOSONGAN :</td>
+              <td style="padding: 10px; text-align: right; color: #047857;">Rp ${grandTotal.toLocaleString('id-ID')}</td>
+            </tr>
+          </tfoot>
+        </table>
+        <p style="margin-top: 12px; font-size: 11px;">Total Catatan Belum Kembali: <strong>${selectedPelangganKosonganData.listTransaksi.length} transaksi</strong></p>
+      `;
+
+      document.getElementById('printKontenTabel').innerHTML = tabelHtml;
+      setTimeout(() => window.print(), 300);
+    }
+
+    async function cetakThermalDetailKosongan() {
+      if (!selectedPelangganKosonganData) return;
+
+      const ESC = '\x1B';
+      const GS = '\x1D';
+      const INIT = ESC + '@';
+      const CENTER = ESC + 'a' + '\x01';
+      const LEFT = ESC + 'a' + '\x00';
+      const BOLD_ON = ESC + 'E' + '\x01';
+      const BOLD_OFF = ESC + 'E' + '\x00';
+      const CUT = GS + 'V' + '\x41' + '\x03';
+
+      let textPrint = INIT;
+      textPrint += CENTER + BOLD_ON + "LANANG 2 BAHAGIA\n" + BOLD_OFF;
+      textPrint += "Jl. Raya Jagapura Lor - Nyibanda\n";
+      textPrint += "DAFTAR KOSONGAN BELUM LUNAS\n";
+      textPrint += "--------------------------------\n";
+      textPrint += LEFT;
+      textPrint += `Pelanggan: ${selectedPelangganKosonganData.pembeli}\n`;
+      textPrint += `Cetak    : ${new Date().toLocaleString('id-ID')}\n`;
+      textPrint += "--------------------------------\n";
+
+      let grandTotal = 0;
+      selectedPelangganKosonganData.listTransaksi.forEach((trx, i) => {
+        grandTotal += Number(trx.total);
+        textPrint += `${i + 1}. Tgl: ${trx.tanggal} ${trx.waktu || ''}\n`;
+        textPrint += `   ${trx.items}\n`;
+        textPrint += `   Subtotal: Rp ${Number(trx.total).toLocaleString('id-ID')}\n`;
+        textPrint += "--------------------------------\n";
+      });
+
+      textPrint += BOLD_ON;
+      textPrint += `TOTAL KESELURUHAN: Rp ${grandTotal.toLocaleString('id-ID')}\n`;
+      textPrint += BOLD_OFF + "--------------------------------\n";
+      textPrint += CENTER + "*** MOHON SEGERA DIKEMBALIKAN ***\n\n";
+
+      const qrUrl = "https://reang-bit.github.io/LANANG-2-BAHAGIA/";
+      const storeLength = qrUrl.length + 3;
+      const pL = String.fromCharCode(storeLength % 256);
+      const pH = String.fromCharCode(Math.floor(storeLength / 256));
+
+      textPrint += GS + '(k' + '\x04\x00\x31\x41\x32\x00';
+      textPrint += GS + '(k' + '\x03\x00\x31\x43\x05';
+      textPrint += GS + '(k' + '\x03\x00\x31\x45\x30';
+      textPrint += GS + '(k' + pL + pH + '\x31\x50\x30' + qrUrl;
+      textPrint += GS + '(k' + '\x03\x00\x31\x51\x30';
+      textPrint += "\n\n\n" + CUT;
+
+      await kirimDataRawKePrinter(textPrint);
     }
 
     function cekPilihanPembeli(selectEl) {
