@@ -153,7 +153,6 @@
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col lg:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <!-- Logo Ukuran Utuh (object-contain) -->
         <img src="https://i.ibb.co.com/1NJT5QH/LOGO-BRANDING.png" alt="Logo LANANG 2 BAHAGIA" class="h-12 w-auto object-contain">
         <div>
           <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">LANANG 2 BAHAGIA</h1>
@@ -236,7 +235,6 @@
               </tr>
             </thead>
             <tbody id="tabelKatalogAwal" class="divide-y divide-slate-100 font-medium text-slate-700">
-              <!-- Data Produk dirender di sini -->
             </tbody>
           </table>
         </div>
@@ -247,7 +245,6 @@
     <div id="tabKasir" class="hidden">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto items-start">
         
-        <!-- KASIR TRANSAKSI -->
         <div class="lg:col-span-8 bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col">
           <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
             <div class="flex items-center gap-2">
@@ -271,7 +268,6 @@
             </select>
           </div>
 
-          <!-- Tabel Keranjang -->
           <div class="overflow-hidden border border-slate-100 rounded-xl mb-5">
             <div class="overflow-y-auto max-h-[35vh]">
               <table class="w-full text-xs text-left border-collapse">
@@ -292,7 +288,6 @@
             </div>
           </div>
 
-          <!-- Input Nama Pembeli, Pelayan & Catatan Kosongan -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">Nama Pembeli</label>
@@ -347,7 +342,6 @@
           </div>
         </div>
 
-        <!-- FORM TAMBAH BARANG MASUK -->
         <div class="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-4 mb-5">
             <span class="text-lg">➕</span>
@@ -390,7 +384,7 @@
         <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
           <div class="flex items-center gap-2">
             <span class="text-lg">🔄</span>
-            <h2 class="text-base font-bold text-slate-800">Manajemen Status Kosongan Pelanggan</h2>
+            <h2 class="text-base font-bold text-slate-800">Manajemen Status & Pembayaran Kosongan</h2>
           </div>
           <button onclick="muatDataPelangganKosongan()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
             🔄 Refresh Data
@@ -431,13 +425,25 @@
               <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
                 <th class="py-3 px-4">Tanggal / Waktu</th>
                 <th class="py-3 px-4">Rincian Item & Catatan Kosongan</th>
-                <th class="py-3 px-4 text-right">Total Transaksi</th>
               </tr>
             </thead>
             <tbody id="tabelDetailKosonganList" class="divide-y divide-slate-100 font-medium text-slate-700">
-              <!-- Detail transaksi kosongan pelanggan dirender di sini -->
             </tbody>
           </table>
+        </div>
+
+        <!-- FORM BAYAR KOSONGAN (Tanpa textbox nominal) -->
+        <div class="bg-emerald-50/60 p-4 sm:p-5 rounded-2xl border border-emerald-100 mt-4 space-y-3">
+          <h4 class="text-xs font-bold text-emerald-900 uppercase tracking-wide">💳 Form Pembayaran / Pelunasan Kosongan</h4>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Catatan Pelunasan</label>
+            <input type="text" id="inputCatatanBayarKosongan" value="PELUNASAN KOSONGAN" 
+                   class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <!-- Menggunakan type="button" untuk mencegah submit/trigger ganda -->
+          <button type="button" onclick="prosesBayarKosonganMenu()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition">
+            💾 Simpan Pembayaran Kosongan
+          </button>
         </div>
       </div>
     </div>
@@ -454,7 +460,6 @@
         </button>
       </div>
 
-      <!-- Tombol Sub-Tab Rekap -->
       <div class="flex bg-slate-200/70 p-1 rounded-xl max-w-md mx-auto">
         <button id="btnSubHarian" onclick="switchSubRekap('harian')" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-emerald-800 shadow-sm">
           Rekap Harian
@@ -467,7 +472,6 @@
         </button>
       </div>
 
-      <!-- KOTAK FILTER PENCARIAN REKAP -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">🔍 Filter Kata Kunci / Pembeli</label>
@@ -491,17 +495,14 @@
         </div>
       </div>
 
-      <!-- Konten Rekap Harian -->
       <div id="kontenRekapHarian" class="space-y-4">
         <div id="listRekapHarian" class="space-y-4"></div>
       </div>
 
-      <!-- Konten Rekap Bulanan -->
       <div id="kontenRekapBulanan" class="space-y-4 hidden">
         <div id="listRekapBulanan" class="space-y-4"></div>
       </div>
 
-      <!-- Konten Rekap Per Pembeli Per Bulan -->
       <div id="kontenRekapPembeli" class="space-y-4 hidden">
         <div id="listRekapPembeli" class="space-y-4"></div>
       </div>
@@ -513,10 +514,8 @@
     <p class="font-medium">&copy; 2026 LANANG 2 BAHAGIA. All Rights Reserved</p>
   </footer>
 
-  <!-- AREA PRINT LAPORAN REKAP -->
   <div id="areaPrintRekap" class="hidden print:block p-6 bg-white font-sans text-black">
     <div class="text-center pb-4 mb-4 border-b-2 border-black flex flex-col items-center gap-2">
-      <!-- Logo pada Area Print Tanpa Terpotong (h-16 w-auto object-contain) -->
       <img src="https://i.ibb.co.com/W4nh9Xrq/Gemini-Generated-Image-aqnsksaqnsksaqns-removebg-preview.png" alt="Logo" class="h-16 w-auto object-contain mb-1">
       <h1 class="text-xl font-black tracking-wide uppercase">LANANG 2 BAHAGIA</h1>
       <p class="text-xs">Jl. Raya Jagapura Lor Blok Nyibanda — Solusi Kebutuhan Rumah Anda</p>
@@ -679,40 +678,21 @@
 
     function muatDataPelangganKosongan() {
       showLoading(true, "Memuat data pelanggan kosongan...");
-      fetch(`${API_URL}?action=getRekap`, { method: "GET", redirect: "follow" })
+      fetch(`${API_URL}?action=getPelangganKosongan`, { method: "GET", redirect: "follow" })
         .then(res => res.json())
         .then(res => {
           showLoading(false);
-          if (res.success && res.rekapPembeliBulanan) {
-            let listPelangganMap = {};
+          if (res.success && res.data) {
+            dataKosonganLengkapCache = res.data;
             
-            res.rekapPembeliBulanan.forEach(pb => {
-              let trxKosongan = pb.listTransaksi.filter(t => {
-                let itemUpper = (t.items || "").toUpperCase();
-                return itemUpper.includes("KOSONGAN BELUM") || itemUpper.includes("KOSONGAN BELUM SEMUA");
-              });
-
-              if (trxKosongan.length > 0) {
-                if (!listPelangganMap[pb.pembeli]) {
-                  listPelangganMap[pb.pembeli] = [];
-                }
-                listPelangganMap[pb.pembeli].push(...trxKosongan);
-              }
-            });
-
-            dataKosonganLengkapCache = Object.keys(listPelangganMap).map(nama => ({
-              pembeli: nama,
-              listTransaksi: listPelangganMap[nama]
-            }));
-
             const select = document.getElementById('selectPelangganKosonganMenu');
             select.innerHTML = '<option value="">-- Pilih Pelanggan Kosongan --</option>';
             
             if (dataKosonganLengkapCache.length === 0) {
-              select.innerHTML += '<option value="" disabled>Tidak ada data kosongan (Semua Lunas/Sudah)</option>';
+              select.innerHTML += '<option value="" disabled>Tidak ada data kosongan (Semua Sudah Lunas)</option>';
             } else {
-              dataKosonganLengkapCache.forEach((item, idx) => {
-                select.innerHTML += `<option value="${idx}">${item.pembeli} (${item.listTransaksi.length} Catatan)</option>`;
+              dataKosonganLengkapCache.forEach((pelangganObj, idx) => {
+                select.innerHTML += `<option value="${idx}">${pelangganObj.pembeli}</option>`;
               });
             }
           }
@@ -722,7 +702,7 @@
           console.error("Gagal memuat pelanggan kosongan", err);
         });
     }
-
+    
     function tampilkanDetailKosonganPelanggan(selectEl) {
       const idx = selectEl.value;
       const containerDetail = document.getElementById('containerDetailKosongan');
@@ -746,12 +726,59 @@
           <tr class="hover:bg-slate-50/80 transition">
             <td class="py-3 px-4 text-slate-600 font-semibold">${trx.tanggal || '-'} (${trx.waktu || '-'})</td>
             <td class="py-3 px-4 text-slate-800">${trx.items}</td>
-            <td class="py-3 px-4 text-right font-bold text-emerald-700">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
           </tr>
         `;
       });
 
       containerDetail.classList.remove('hidden');
+    }
+
+    function prosesBayarKosonganMenu() {
+      if (!selectedPelangganKosonganData) {
+        alert("⚠️ Silakan pilih pelanggan kosongan terlebih dahulu!");
+        return;
+      }
+
+      const nominal = 0;
+      const catatan = document.getElementById('inputCatatanBayarKosongan').value.trim() || "PELUNASAN KOSONGAN";
+      const namaPembeli = selectedPelangganKosonganData.pembeli;
+
+      if (!confirm(`Konfirmasi pelunasan kosongan untuk "${namaPembeli}"?`)) {
+        return;
+      }
+
+      // Proteksi Klik Ganda
+      const btnSimpan = document.activeElement;
+      if (btnSimpan) btnSimpan.disabled = true;
+
+      showLoading(true, "Menyimpan pembayaran kosongan...");
+
+      const params = new URLSearchParams({
+        action: 'bayarKosongan',
+        namaPembeli: namaPembeli,
+        nominal: nominal,
+        catatan: catatan
+      });
+
+      fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: 'follow' })
+        .then(res => res.json())
+        .then(res => {
+          showLoading(false);
+          if (btnSimpan) btnSimpan.disabled = false;
+
+          if (res.success) {
+            alert("✅ Pembayaran kosongan berhasil disimpan!");
+            muatDataPelangganKosongan();
+            document.getElementById('containerDetailKosongan').classList.add('hidden');
+          } else {
+            alert("⚠️ Gagal: " + (res.message || "Terjadi kesalahan"));
+          }
+        })
+        .catch(err => {
+          showLoading(false);
+          if (btnSimpan) btnSimpan.disabled = false;
+          alert("⚠️ Gagal terhubung ke Database.");
+        });
     }
 
     function cetakBiasaDetailKosongan() {
@@ -765,16 +792,13 @@
       document.getElementById('printTglCetak').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
       let rowsHtml = '';
-      let grandTotal = 0;
 
       selectedPelangganKosonganData.listTransaksi.forEach((trx, i) => {
-        grandTotal += Number(trx.total);
         rowsHtml += `
           <tr style="border-bottom: 1px solid #cbd5e1;">
             <td style="padding: 8px; text-align: center; font-size: 11px;">${i + 1}</td>
             <td style="padding: 8px; font-size: 11px;">${trx.tanggal || '-'} ${trx.waktu ? '(' + trx.waktu + ')' : ''}</td>
             <td style="padding: 8px; font-size: 11px;">${trx.items}</td>
-            <td style="padding: 8px; text-align: right; font-size: 11px; font-weight: bold;">Rp ${Number(trx.total).toLocaleString('id-ID')}</td>
           </tr>
         `;
       });
@@ -786,18 +810,11 @@
               <th style="padding: 8px; text-align: center; width: 40px;">No</th>
               <th style="padding: 8px; text-align: left; width: 140px;">Waktu Transaksi</th>
               <th style="padding: 8px; text-align: left;">Rincian Item & Catatan Kosongan</th>
-              <th style="padding: 8px; text-align: right; width: 110px;">Total</th>
             </tr>
           </thead>
           <tbody>
             ${rowsHtml}
           </tbody>
-          <tfoot>
-            <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a; font-weight: bold; font-size: 12px;">
-              <td colspan="3" style="padding: 10px; text-align: right;">TOTAL TRANSAKSI KOSONGAN :</td>
-              <td style="padding: 10px; text-align: right; color: #047857;">Rp ${grandTotal.toLocaleString('id-ID')}</td>
-            </tr>
-          </tfoot>
         </table>
         <p style="margin-top: 12px; font-size: 11px;">Total Catatan Belum Kembali: <strong>${selectedPelangganKosonganData.listTransaksi.length} transaksi</strong></p>
       `;
@@ -831,18 +848,12 @@
       textPrint += `Cetak    : ${new Date().toLocaleString('id-ID')}\n`;
       textPrint += "--------------------------------\n";
 
-      let grandTotal = 0;
       selectedPelangganKosonganData.listTransaksi.forEach((trx, i) => {
-        grandTotal += Number(trx.total);
         textPrint += `${i + 1}. Tgl: ${trx.tanggal} ${trx.waktu || ''}\n`;
         textPrint += `   ${trx.items}\n`;
-        textPrint += `   Subtotal: Rp ${Number(trx.total).toLocaleString('id-ID')}\n`;
         textPrint += "--------------------------------\n";
       });
 
-      textPrint += BOLD_ON;
-      textPrint += `TOTAL KESELURUHAN: Rp ${grandTotal.toLocaleString('id-ID')}\n`;
-      textPrint += BOLD_OFF + "--------------------------------\n";
       textPrint += CENTER + "** MOHON SEGERA DIKEMBALIKAN **\n\n";
 
       textPrint += CENTER + "Kunjungi Situs Kami\n";
@@ -1022,7 +1033,7 @@
         stok: stok
       });
 
-      fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: "follow" })
+      fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: 'follow' })
         .then(res => res.json())
         .then(res => {
           showLoading(false);
@@ -1388,9 +1399,14 @@
                 </div>
                 <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
               </div>
-              <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                Rp ${trx.total.toLocaleString('id-ID')}
-              </span>
+              <div class="flex items-center gap-3">
+                <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                  Rp ${trx.total.toLocaleString('id-ID')}
+                </span>
+                <button onclick="hapusTransaksiSheet(${trx.rowIndex}, '${trx.pembeli}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition border border-rose-200" title="Hapus Transaksi">
+                  🗑️ Hapus
+                </button>
+              </div>
             </div>
           `;
         });
@@ -1444,9 +1460,14 @@
                 </div>
                 <p class="text-xs text-slate-600 mt-1">🛒 <strong>Items:</strong> ${trx.items}</p>
               </div>
-              <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                Rp ${trx.total.toLocaleString('id-ID')}
-              </span>
+              <div class="flex items-center gap-3">
+                <span class="font-extrabold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                  Rp ${trx.total.toLocaleString('id-ID')}
+                </span>
+                <button onclick="hapusTransaksiSheet(${trx.rowIndex}, '${trx.pembeli}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition border border-rose-200" title="Hapus Transaksi">
+                  🗑️ Hapus
+                </button>
+              </div>
             </div>
           `;
         });
@@ -1505,8 +1526,13 @@
                 <p class="text-slate-500 mt-0.5">🛒 ${trx.items}</p>
                 <div class="mt-1">${statusBayarHtml}</div>
               </div>
-              <div class="text-right">
-                <span class="font-bold text-slate-800 block">Total: Rp ${trx.total.toLocaleString('id-ID')}</span>
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <span class="font-bold text-slate-800 block">Total: Rp ${trx.total.toLocaleString('id-ID')}</span>
+                </div>
+                <button onclick="hapusTransaksiSheet(${trx.rowIndex}, '${trx.pembeli}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition border border-rose-200" title="Hapus Transaksi">
+                  🗑️ Hapus
+                </button>
               </div>
             </div>
           `;
@@ -1546,8 +1572,8 @@
                 </div>
                 ${tombolBayarUtangHtml}
                 <button onclick="pastikanDataRekapSiap(() => cetakRekapSpesifik('pembeli', ${index}))" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow" title="Cetak Standar">
-  <span>🖨️</span> Cetak
-</button>
+                  <span>🖨️</span> Cetak
+                </button>
                 <button onclick="pastikanDataRekapSiap(() => cetakBluetoothPembeli(${index}))" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow" title="Cetak Printer Bluetooth">
                   <span>🦷</span> Thermal
                 </button>
@@ -1559,6 +1585,41 @@
           </div>
         `;
       });
+    }
+
+    function hapusTransaksiSheet(rowIndex, namaPembeli) {
+      if (!isKasirUnlocked) {
+        bukaModalLogin();
+        return;
+      }
+
+      if (!confirm(`⚠️ Apakah Anda yakin ingin menghapus transaksi atas nama "${namaPembeli}" ini?\nStok barang akan dikembalikan secara otomatis.`)) {
+        return;
+      }
+
+      showLoading(true, "Menghapus transaksi & mengembalikan stok...");
+
+      const params = new URLSearchParams({
+        action: 'hapusTransaksi',
+        rowIndex: rowIndex
+      });
+
+      fetch(`${API_URL}?${params.toString()}`, { method: 'GET', redirect: 'follow' })
+        .then(res => res.json())
+        .then(res => {
+          showLoading(false);
+          if (res.success) {
+            alert("✅ " + res.message);
+            muatDataRekap();
+            muatDataProdukFromSheets();
+          } else {
+            alert("⚠️ Gagal: " + res.message);
+          }
+        })
+        .catch(err => {
+          showLoading(false);
+          alert("⚠️ Terjadi kesalahan koneksi saat menghapus transaksi.");
+        });
     }
 
     function bukaModalBayarUtang(namaPembeli, sisaUtang) {
