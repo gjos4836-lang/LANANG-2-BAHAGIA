@@ -704,6 +704,7 @@
       <div class="text-center">
         <p>Jagapura Lor, <span id="printTglCetak"></span></p>
         <p class="mt-1">Pimpinan / Kasir</p>
+        <!-- Penampung Gambar Tanda Tangan Hasil Render Canvas -->
         <div id="printAreaTtdImg" class="my-2 h-16 flex items-center justify-center"></div>
         <p class="font-bold border-t border-black pt-1 inline-block min-w-[150px]" id="printNamaPimpinan">Pimpinan / Kasir</p>
       </div>
@@ -807,6 +808,38 @@
     function bersihkanCanvasTTD() {
       if (!ctxTTD) return;
       ctxTTD.clearRect(0, 0, canvasTTD.width, canvasTTD.height);
+    }
+
+    /* Fungsi Bantu untuk Menyiapkan Tanda Tangan ke Area Cetak */
+    function siapkanDataCetak(judulLaporan, infoWaktu, kontenHTML, totalOmset, totalBayar, totalHutang) {
+      document.getElementById('printJudulLaporan').innerText = judulLaporan;
+      document.getElementById('printInfoWaktu').innerText = infoWaktu;
+      document.getElementById('printKontenTabel').innerHTML = kontenHTML;
+
+      document.getElementById('printTotalOmsetVal').innerText = "Rp " + totalOmset.toLocaleString('id-ID');
+      document.getElementById('printTotalBayarVal').innerText = "Rp " + totalBayar.toLocaleString('id-ID');
+      document.getElementById('printTotalHutangVal').innerText = "Rp " + totalHutang.toLocaleString('id-ID');
+
+      // Set Tanggal Cetak
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('printTglCetak').innerText = new Date().toLocaleDateString('id-ID', options);
+
+      // Set Nama Pimpinan/Kasir
+      const namaInput = document.getElementById('inputNamaPimpinan').value.trim();
+      const namaFinal = namaInput || "Pimpinan / Kasir";
+      document.getElementById('printNamaPimpinan').innerText = namaFinal;
+
+      // Konversi Canvas TTD Stylus menjadi Gambar PNG agar Muncul di Hasil Cetak
+      const areaTtd = document.getElementById('printAreaTtdImg');
+      areaTtd.innerHTML = '';
+      if (canvasTTD) {
+        const dataURL = canvasTTD.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.style.maxHeight = '60px';
+        img.style.maxWidth = '180px';
+        areaTtd.appendChild(img);
+      }
     }
 
     function switchTab(tab) {
@@ -2112,78 +2145,23 @@
       params.append('total', 0);
       params.append('bayar', 0);
       params.append('kembali', 0);
-      params.append('catatan', catatan);
+      params.append('catatan', "Pelunasan Item Kosongan");
 
       fetch(API_URL + "?" + params.toString())
         .then(res => res.json())
         .then(res => {
           showLoading(false);
           if (res.success) {
-            alert("Pelunasan Kosongan Berhasil Disimpan!");
+            alert("Status Kosongan Berhasil Dilunasi!");
             muatDataPelangganKosongan();
           } else {
-            alert("Gagal menyimpan: " + res.message);
+            alert("Gagal melunasi kosongan: " + res.message);
           }
         })
         .catch(err => {
           showLoading(false);
-          alert("Terjadi kesalahan jaringan!");
+          alert("Terjadi kesalahan sistem!");
         });
-    }
-
-    function cetakBiasaDetailKosongan() {
-      if (!selectedPelangganKosonganData) return;
-      const data = selectedPelangganKosonganData;
-
-      document.getElementById('printJudulLaporan').innerText = "LAPORAN TANGGUNGAN KOSONGAN PELANGGAN";
-      document.getElementById('printInfoWaktu').innerText = `Pelanggan: ${data.pembeli}`;
-
-      let html = `
-        <table class="w-full text-left text-xs border-collapse border border-black mt-3">
-          <thead>
-            <tr class="bg-slate-200 border-b border-black">
-              <th class="p-2 border-r border-black">No</th>
-              <th class="p-2 border-r border-black">Tanggal & Waktu</th>
-              <th class="p-2">Rincian Item / Catatan Kosongan</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      data.listTransaksi.forEach((t, i) => {
-        html += `
-          <tr class="border-b border-black">
-            <td class="p-2 border-r border-black text-center">${i + 1}</td>
-            <td class="p-2 border-r border-black font-mono">${t.tanggal} ${t.waktu}</td>
-            <td class="p-2 font-semibold">${t.items}</td>
-          </tr>
-        `;
-      });
-
-      html += `</tbody></table>`;
-      document.getElementById('printKontenTabel').innerHTML = html;
-
-      document.getElementById('rowPrintTotalOmset').style.display = 'none';
-      document.getElementById('rowPrintTotalBayar').style.display = 'none';
-      document.getElementById('rowPrintTotalHutang').style.display = 'none';
-
-      const now = new Date();
-      document.getElementById('printTglCetak').innerText = now.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-      const namaPim = (document.getElementById('inputNamaPimpinan').value || "").trim() || "Pimpinan / Kasir";
-      document.getElementById('printNamaPimpinan').innerText = namaPim;
-
-      const ttdCanvas = document.getElementById('canvasTtd');
-      const ttdContainer = document.getElementById('printAreaTtdImg');
-      ttdContainer.innerHTML = '';
-      if (ttdCanvas) {
-        const dataUrl = ttdCanvas.toDataURL();
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.className = "h-16 object-contain";
-        ttdContainer.appendChild(img);
-      }
-
-      window.print();
     }
 
     function muatDataRekap() {
@@ -2198,18 +2176,23 @@
               bulanan: res.bulanan || [],
               rekapPembeliBulanan: res.rekapPembeliBulanan || []
             };
-            filteredDataRekapCache = JSON.parse(JSON.stringify(cacheDataRekap));
             isDataRekapLoaded = true;
-            renderRekapUI();
+            terapkanFilterRekap();
           } else {
-            alert("Gagal memuat rekap: " + (res.message || "Error"));
+            alert("Gagal memuat rekap: " + res.message);
           }
         })
         .catch(err => {
           showLoading(false);
           console.error(err);
-          alert("Terjadi kesalahan jaringan saat memuat rekap.");
         });
+    }
+
+    function resetFilterRekap() {
+      document.getElementById('filterKeyword').value = '';
+      document.getElementById('filterTanggal').value = '';
+      document.getElementById('filterBulan').value = '';
+      terapkanFilterRekap();
     }
 
     function terapkanFilterRekap() {
@@ -2217,133 +2200,132 @@
       const filterTgl = document.getElementById('filterTanggal').value;
       const filterBln = document.getElementById('filterBulan').value;
 
+      // 1. Filter Rekap Harian
       let harianFiltered = [];
       cacheDataRekap.harian.forEach(h => {
         if (filterTgl && h.tanggal !== filterTgl) return;
-        
+        if (filterBln && !h.tanggal.startsWith(filterBln)) return;
+
         let listTrx = h.listTransaksi.filter(trx => {
-          if (filterBln && !trx.tanggal.startsWith(filterBln)) return false;
-          if (keyword) {
-            const matchPembeli = (trx.pembeli || "").toLowerCase().includes(keyword);
-            const matchItems = (trx.items || "").toLowerCase().includes(keyword);
-            const matchCatatan = (trx.catatan || "").toLowerCase().includes(keyword);
-            if (!matchPembeli && !matchItems && !matchCatatan) return false;
-          }
-          return true;
+          if (!keyword) return true;
+          const matchPembeli = (trx.pembeli || "").toLowerCase().includes(keyword);
+          const matchItem = (trx.items || "").toLowerCase().includes(keyword);
+          const matchCatatan = (trx.catatan || "").toLowerCase().includes(keyword);
+          return matchPembeli || matchItem || matchCatatan;
         });
 
-        if (listTrx.length > 0) {
-          let totalOmset = 0;
-          listTrx.forEach(t => totalOmset += t.total);
-          harianFiltered.push({
-            tanggal: h.tanggal,
-            totalOmset: totalOmset,
-            listTransaksi: listTrx
-          });
+        if (listTrx.length > 0 || (!keyword && !filterTgl)) {
+          if (!keyword && !filterTgl) {
+            harianFiltered.push(h);
+          } else if (listTrx.length > 0) {
+            let totalHari = 0;
+            listTrx.forEach(t => totalHari += t.total);
+            harianFiltered.push({
+              tanggal: h.tanggal,
+              totalOmset: totalHari,
+              listTransaksi: listTrx
+            });
+          }
         }
       });
+      filteredDataRekapCache.harian = harianFiltered;
+      renderRekapHarian(harianFiltered);
 
+      // 2. Filter Rekap Bulanan
       let bulananFiltered = [];
       cacheDataRekap.bulanan.forEach(b => {
         if (filterBln && b.bulan !== filterBln) return;
 
         let listTrx = b.listTransaksi.filter(trx => {
-          if (filterTgl && trx.tanggal !== filterTgl) return false;
-          if (keyword) {
-            const matchPembeli = (trx.pembeli || "").toLowerCase().includes(keyword);
-            const matchItems = (trx.items || "").toLowerCase().includes(keyword);
-            const matchCatatan = (trx.catatan || "").toLowerCase().includes(keyword);
-            if (!matchPembeli && !matchItems && !matchCatatan) return false;
-          }
-          return true;
+          if (!keyword) return true;
+          const matchPembeli = (trx.pembeli || "").toLowerCase().includes(keyword);
+          const matchItem = (trx.items || "").toLowerCase().includes(keyword);
+          const matchCatatan = (trx.catatan || "").toLowerCase().includes(keyword);
+          return matchPembeli || matchItem || matchCatatan;
         });
 
-        if (listTrx.length > 0) {
-          let totalOmset = 0;
-          listTrx.forEach(t => totalOmset += t.total);
-          bulananFiltered.push({
-            bulan: b.bulan,
-            totalOmset: totalOmset,
-            listTransaksi: listTrx
-          });
+        if (listTrx.length > 0 || (!keyword && !filterBln)) {
+          if (!keyword && !filterBln) {
+            bulananFiltered.push(b);
+          } else if (listTrx.length > 0) {
+            let totalBulan = 0;
+            listTrx.forEach(t => totalBulan += t.total);
+            bulananFiltered.push({
+              bulan: b.bulan,
+              totalOmset: totalBulan,
+              listTransaksi: listTrx
+            });
+          }
         }
       });
+      filteredDataRekapCache.bulanan = bulananFiltered;
+      renderRekapBulanan(bulananFiltered);
 
+      // 3. Filter Rekap Pembeli
       let pembeliFiltered = [];
       cacheDataRekap.rekapPembeliBulanan.forEach(p => {
         if (filterBln && p.bulan !== filterBln) return;
-        if (keyword && !p.pembeli.toLowerCase().includes(keyword)) return;
 
         let listTrx = p.listTransaksi.filter(trx => {
-          if (filterTgl && trx.tanggal !== filterTgl) return false;
-          return true;
+          if (filterTgl && trx.tanggal !== filterTgl) return;
+          if (!keyword) return true;
+          const matchPembeli = (trx.pembeli || "").toLowerCase().includes(keyword);
+          const matchItem = (trx.items || "").toLowerCase().includes(keyword);
+          return matchPembeli || matchItem;
         });
 
-        if (listTrx.length > 0) {
-          let totalBelanja = 0;
-          listTrx.forEach(t => totalBelanja += t.total);
-          pembeliFiltered.push({
-            pembeli: p.pembeli,
-            bulan: p.bulan,
-            totalBelanja: totalBelanja,
-            listTransaksi: listTrx
-          });
+        if (listTrx.length > 0 || (!keyword && !filterTgl && !filterBln)) {
+          if (!keyword && !filterTgl && !filterBln) {
+            pembeliFiltered.push(p);
+          } else if (listTrx.length > 0) {
+            let totalPlg = 0;
+            listTrx.forEach(t => totalPlg += t.total);
+            pembeliFiltered.push({
+              pembeli: p.pembeli,
+              bulan: p.bulan,
+              totalBelanja: totalPlg,
+              listTransaksi: listTrx
+            });
+          }
         }
       });
-
-      filteredDataRekapCache = {
-        harian: harianFiltered,
-        bulanan: bulananFiltered,
-        rekapPembeliBulanan: pembeliFiltered
-      };
-
-      renderRekapUI();
+      filteredDataRekapCache.rekapPembeliBulanan = pembeliFiltered;
+      renderRekapPembeli(pembeliFiltered);
     }
 
-    function resetFilterRekap() {
-      document.getElementById('filterKeyword').value = '';
-      document.getElementById('filterTanggal').value = '';
-      document.getElementById('filterBulan').value = '';
-      filteredDataRekapCache = JSON.parse(JSON.stringify(cacheDataRekap));
-      renderRekapUI();
-    }
-
-    function renderRekapUI() {
-      renderRekapHarianList();
-      renderRekapBulananList();
-      renderRekapPembeliList();
-    }
-
-    function renderRekapHarianList() {
+    function renderRekapHarian(data) {
       const container = document.getElementById('listRekapHarian');
       container.innerHTML = '';
 
-      const data = filteredDataRekapCache.harian;
       if (data.length === 0) {
-        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap harian</div>`;
+        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap harian ditemukan</div>`;
         return;
       }
 
-      data.forEach(item => {
+      data.forEach(h => {
         const card = document.createElement('div');
-        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4";
+        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4 hover:border-slate-700 transition";
         
-        let rowsHtml = '';
-        item.listTransaksi.forEach((t, idx) => {
-          rowsHtml += `
+        let rows = '';
+        let totalOmsetHariIni = 0;
+        let totalBayarHariIni = 0;
+        let totalHutangHariIni = 0;
+
+        h.listTransaksi.forEach((t, i) => {
+          totalOmsetHariIni += t.total;
+          totalBayarHariIni += t.bayar;
+          if (t.kembali < 0) totalHutangHariIni += Math.abs(t.kembali);
+
+          rows += `
             <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">
-              <td class="py-3 px-4 font-mono text-slate-400">${idx + 1}</td>
-              <td class="py-3 px-4 font-mono text-slate-300">${t.waktu || '-'}</td>
+              <td class="py-3 px-4 font-mono text-slate-400 text-xs">${t.waktu || '-'}</td>
               <td class="py-3 px-4 font-bold text-white">${t.pembeli || 'Umum'}</td>
-              <td class="py-3 px-4 text-slate-300">${t.items}</td>
-              <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">Rp ${t.total.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${t.bayar.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-slate-300">Rp ${t.kembali.toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 font-semibold text-slate-300">${t.items}</td>
+              <td class="py-3 px-4 text-right font-mono text-slate-200">Rp ${(t.total || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${(t.bayar || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-rose-400 font-bold">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
               <td class="py-3 px-4 text-center">
-                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                  <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
-                  <button onclick="cetakStrukThermalDetail('${t.pembeli}', '${t.items}', ${t.total}, ${t.bayar}, ${t.kembali})" class="px-2 py-1 bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 font-bold text-xs rounded-lg transition border border-brand-500/30">🦷 Print</button>
-                </div>
+                <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
               </td>
             </tr>
           `;
@@ -2352,15 +2334,15 @@
         card.innerHTML = `
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 class="text-base font-extrabold text-white flex items-center gap-2">📅 Tanggal: ${item.tanggal}</h3>
-              <p class="text-xs text-slate-400">Total Omset Harian: <span class="font-extrabold text-emerald-400 font-mono">Rp ${item.totalOmset.toLocaleString('id-ID')}</span></p>
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">📅 Tanggal: ${h.tanggal}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Total Omset: <span class="font-extrabold text-emerald-400 font-mono">Rp ${totalOmsetHariIni.toLocaleString('id-ID')}</span></p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="cetakThermalRekapHarian('${item.tanggal}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
-                <span>🦷</span> Print Thermal Rinci
+              <button onclick="cetakThermalRekapHarian('${h.tanggal}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                <span>🦷</span> Print Thermal
               </button>
-              <button onclick="cetakBiasaRekapHarian('${item.tanggal}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-slate-700">
-                <span>🖨️</span> Print Biasa / PDF
+              <button onclick="cetakBiasaRekapHarian('${h.tanggal}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 border border-slate-700">
+                <span>🖨️</span> Print Biasa
               </button>
             </div>
           </div>
@@ -2369,18 +2351,17 @@
             <table class="w-full text-left text-xs border-collapse">
               <thead class="bg-slate-900 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th class="p-3 pl-4">No</th>
-                  <th class="p-3">Waktu</th>
+                  <th class="p-3 pl-4">Waktu</th>
                   <th class="p-3">Pembeli</th>
                   <th class="p-3">Rincian Item</th>
                   <th class="p-3 text-right">Total</th>
                   <th class="p-3 text-right">Bayar</th>
-                  <th class="p-3 text-right">Kembali</th>
+                  <th class="p-3 text-right">Hutang</th>
                   <th class="p-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800/60">
-                ${rowsHtml}
+                ${rows}
               </tbody>
             </table>
           </div>
@@ -2389,36 +2370,39 @@
       });
     }
 
-    function renderRekapBulananList() {
+    function renderRekapBulanan(data) {
       const container = document.getElementById('listRekapBulanan');
       container.innerHTML = '';
 
-      const data = filteredDataRekapCache.bulanan;
       if (data.length === 0) {
-        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap bulanan</div>`;
+        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap bulanan ditemukan</div>`;
         return;
       }
 
-      data.forEach(item => {
+      data.forEach(b => {
         const card = document.createElement('div');
-        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4";
+        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4 hover:border-slate-700 transition";
         
-        let rowsHtml = '';
-        item.listTransaksi.forEach((t, idx) => {
-          rowsHtml += `
+        let rows = '';
+        let totalOmsetBulanIni = 0;
+        let totalBayarBulanIni = 0;
+        let totalHutangBulanIni = 0;
+
+        b.listTransaksi.forEach((t, i) => {
+          totalOmsetBulanIni += t.total;
+          totalBayarBulanIni += t.bayar;
+          if (t.kembali < 0) totalHutangBulanIni += Math.abs(t.kembali);
+
+          rows += `
             <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">
-              <td class="py-3 px-4 font-mono text-slate-400">${idx + 1}</td>
-              <td class="py-3 px-4 font-mono text-slate-300">${t.tanggal}</td>
+              <td class="py-3 px-4 font-mono text-slate-400 text-xs">${t.tanggal}</td>
               <td class="py-3 px-4 font-bold text-white">${t.pembeli || 'Umum'}</td>
-              <td class="py-3 px-4 text-slate-300">${t.items}</td>
-              <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">Rp ${t.total.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${t.bayar.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-slate-300">Rp ${t.kembali.toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 font-semibold text-slate-300">${t.items}</td>
+              <td class="py-3 px-4 text-right font-mono text-slate-200">Rp ${(t.total || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${(t.bayar || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-rose-400 font-bold">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
               <td class="py-3 px-4 text-center">
-                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                  <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
-                  <button onclick="cetakStrukThermalDetail('${t.pembeli}', '${t.items}', ${t.total}, ${t.bayar}, ${t.kembali})" class="px-2 py-1 bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 font-bold text-xs rounded-lg transition border border-brand-500/30">🦷 Print</button>
-                </div>
+                <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
               </td>
             </tr>
           `;
@@ -2427,15 +2411,15 @@
         card.innerHTML = `
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 class="text-base font-extrabold text-white">🗓️ Bulan: ${item.bulan}</h3>
-              <p class="text-xs text-slate-400">Total Omset Bulan Ini: <span class="font-extrabold text-emerald-400 font-mono">Rp ${item.totalOmset.toLocaleString('id-ID')}</span></p>
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">🗓️ Bulan: ${b.bulan}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Total Omset Bulan Ini: <span class="font-extrabold text-emerald-400 font-mono">Rp ${totalOmsetBulanIni.toLocaleString('id-ID')}</span></p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="cetakThermalRekapBulanan('${item.bulan}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
-                <span>🦷</span> Print Thermal Bulanan Rinci
+              <button onclick="cetakThermalRekapBulanan('${b.bulan}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                <span>🦷</span> Print Thermal
               </button>
-              <button onclick="cetakBiasaRekapBulanan('${item.bulan}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-slate-700">
-                <span>🖨️</span> Print Biasa / PDF
+              <button onclick="cetakBiasaRekapBulanan('${b.bulan}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 border border-slate-700">
+                <span>🖨️</span> Print Biasa
               </button>
             </div>
           </div>
@@ -2444,18 +2428,17 @@
             <table class="w-full text-left text-xs border-collapse">
               <thead class="bg-slate-900 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th class="p-3 pl-4">No</th>
-                  <th class="p-3">Tanggal</th>
+                  <th class="p-3 pl-4">Tanggal</th>
                   <th class="p-3">Pembeli</th>
                   <th class="p-3">Rincian Item</th>
                   <th class="p-3 text-right">Total</th>
                   <th class="p-3 text-right">Bayar</th>
-                  <th class="p-3 text-right">Kembali</th>
+                  <th class="p-3 text-right">Hutang</th>
                   <th class="p-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800/60">
-                ${rowsHtml}
+                ${rows}
               </tbody>
             </table>
           </div>
@@ -2464,35 +2447,38 @@
       });
     }
 
-    function renderRekapPembeliList() {
+    function renderRekapPembeli(data) {
       const container = document.getElementById('listRekapPembeli');
       container.innerHTML = '';
 
-      const data = filteredDataRekapCache.rekapPembeliBulanan;
       if (data.length === 0) {
-        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap per pembeli</div>`;
+        container.innerHTML = `<div class="bg-slate-900 p-8 rounded-3xl text-center text-slate-500 font-semibold border border-slate-800">Tidak ada data rekap pembeli ditemukan</div>`;
         return;
       }
 
-      data.forEach(item => {
+      data.forEach(p => {
         const card = document.createElement('div');
-        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4";
+        card.className = "bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 space-y-4 hover:border-slate-700 transition";
         
-        let rowsHtml = '';
-        item.listTransaksi.forEach((t, idx) => {
-          rowsHtml += `
+        let rows = '';
+        let totalBelanjaPembeli = 0;
+        let totalBayarPembeli = 0;
+        let totalHutangPembeli = 0;
+
+        p.listTransaksi.forEach((t, i) => {
+          totalBelanjaPembeli += t.total;
+          totalBayarPembeli += t.bayar;
+          if (t.kembali < 0) totalHutangPembeli += Math.abs(t.kembali);
+
+          rows += `
             <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">
-              <td class="py-3 px-4 font-mono text-slate-400">${idx + 1}</td>
-              <td class="py-3 px-4 font-mono text-slate-300">${t.tanggal}</td>
-              <td class="py-3 px-4 text-slate-300">${t.items}</td>
-              <td class="py-3 px-4 text-right font-mono font-bold text-slate-200">Rp ${t.total.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${t.bayar.toLocaleString('id-ID')}</td>
-              <td class="py-3 px-4 text-right font-mono text-slate-300">Rp ${t.kembali.toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 font-mono text-slate-400 text-xs">${t.tanggal}</td>
+              <td class="py-3 px-4 font-semibold text-slate-300">${t.items}</td>
+              <td class="py-3 px-4 text-right font-mono text-slate-200">Rp ${(t.total || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-emerald-400">Rp ${(t.bayar || 0).toLocaleString('id-ID')}</td>
+              <td class="py-3 px-4 text-right font-mono text-rose-400 font-bold">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
               <td class="py-3 px-4 text-center">
-                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                  <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
-                  <button onclick="cetakStrukThermalDetail('${item.pembeli}', '${t.items}', ${t.total}, ${t.bayar}, ${t.kembali})" class="px-2 py-1 bg-brand-500/10 hover:bg-brand-500/20 text-brand-300 font-bold text-xs rounded-lg transition border border-brand-500/30">🦷 Print</button>
-                </div>
+                <button onclick="hapusTransaksi('${t.id}')" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs rounded-lg transition border border-rose-500/30">Hapus</button>
               </td>
             </tr>
           `;
@@ -2501,15 +2487,15 @@
         card.innerHTML = `
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 class="text-base font-extrabold text-white">👤 Pembeli: ${item.pembeli} <span class="text-xs font-normal text-slate-400">(Bulan: ${item.bulan})</span></h3>
-              <p class="text-xs text-slate-400">Total Belanja: <span class="font-extrabold text-emerald-400 font-mono">Rp ${item.totalBelanja.toLocaleString('id-ID')}</span></p>
+              <h3 class="text-base font-extrabold text-white flex items-center gap-2">👤 Nama Pelanggan: ${p.pembeli}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Total Belanja: <span class="font-extrabold text-emerald-400 font-mono">Rp ${totalBelanjaPembeli.toLocaleString('id-ID')}</span></p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="cetakThermalRekapPembeli('${item.pembeli}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
-                <span>🦷</span> Print Thermal Pembeli Rinci
+              <button onclick="cetakThermalRekapPembeli('${p.pembeli}')" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+                <span>🦷</span> Print Thermal
               </button>
-              <button onclick="cetakBiasaRekapPembeli('${item.pembeli}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 border border-slate-700">
-                <span>🖨️</span> Print Biasa / PDF
+              <button onclick="cetakBiasaRekapPembeli('${p.pembeli}')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 border border-slate-700">
+                <span>🖨️</span> Print Biasa
               </button>
             </div>
           </div>
@@ -2518,17 +2504,16 @@
             <table class="w-full text-left text-xs border-collapse">
               <thead class="bg-slate-900 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th class="p-3 pl-4">No</th>
-                  <th class="p-3">Tanggal</th>
+                  <th class="p-3 pl-4">Tanggal</th>
                   <th class="p-3">Rincian Item</th>
                   <th class="p-3 text-right">Total</th>
                   <th class="p-3 text-right">Bayar</th>
-                  <th class="p-3 text-right">Kembali</th>
+                  <th class="p-3 text-right">Hutang</th>
                   <th class="p-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800/60">
-                ${rowsHtml}
+                ${rows}
               </tbody>
             </table>
           </div>
@@ -2541,74 +2526,44 @@
       const found = filteredDataRekapCache.harian.find(h => h.tanggal === tanggal);
       if (!found) return;
 
-      document.getElementById('printJudulLaporan').innerText = "LAPORAN REKAPITULASI HARIAN";
-      document.getElementById('printInfoWaktu').innerText = `Tanggal: ${found.tanggal}`;
+      let totalOmset = 0;
+      let totalBayar = 0;
+      let totalHutang = 0;
 
-      let html = `
-        <table class="w-full text-left text-xs border-collapse border border-black mt-3">
+      let htmlRows = `
+        <table class="w-full text-left border-collapse text-xs border border-black mt-2">
           <thead>
-            <tr class="bg-slate-200 border-b border-black">
-              <th class="p-2 border-r border-black">No</th>
-              <th class="p-2 border-r border-black">Waktu</th>
-              <th class="p-2 border-r border-black">Pembeli</th>
-              <th class="p-2 border-r border-black">Rincian Item</th>
-              <th class="p-2 border-r border-black text-right">Total (Rp)</th>
-              <th class="p-2 border-r border-black text-right">Bayar (Rp)</th>
-              <th class="p-2 text-right">Kembali / Utang (Rp)</th>
+            <tr class="bg-slate-200 border-b border-black text-[11px]">
+              <th class="py-2 px-2 border-r border-black">Waktu</th>
+              <th class="py-2 px-2 border-r border-black">Pembeli</th>
+              <th class="py-2 px-2 border-r border-black">Rincian Item</th>
+              <th class="py-2 px-2 border-r border-black text-right">Total</th>
+              <th class="py-2 px-2 border-r border-black text-right">Bayar</th>
+              <th class="py-2 px-2 text-right">Hutang</th>
             </tr>
           </thead>
           <tbody>
       `;
 
-      let totalOm = 0;
-      let totalByr = 0;
-      let totalHtg = 0;
+      found.listTransaksi.forEach(t => {
+        totalOmset += t.total;
+        totalBayar += t.bayar;
+        if (t.kembali < 0) totalHutang += Math.abs(t.kembali);
 
-      found.listTransaksi.forEach((t, i) => {
-        totalOm += t.total;
-        totalByr += t.bayar;
-        if (t.kembali < 0) totalHtg += Math.abs(t.kembali);
-
-        html += `
+        htmlRows += `
           <tr class="border-b border-black">
-            <td class="p-2 border-r border-black text-center">${i + 1}</td>
-            <td class="p-2 border-r border-black font-mono">${t.waktu || '-'}</td>
-            <td class="p-2 border-r border-black font-bold">${t.pembeli || 'Umum'}</td>
-            <td class="p-2 border-r border-black">${t.items}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.total.toLocaleString('id-ID')}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.bayar.toLocaleString('id-ID')}</td>
-            <td class="p-2 text-right font-mono">${t.kembali.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black">${t.waktu || '-'}</td>
+            <td class="py-2 px-2 border-r border-black font-bold">${t.pembeli || 'Umum'}</td>
+            <td class="py-2 px-2 border-r border-black">${t.items}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.total.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.bayar.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 text-right font-mono">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
           </tr>
         `;
       });
+      htmlRows += `</tbody></table>`;
 
-      html += `</tbody></table>`;
-      document.getElementById('printKontenTabel').innerHTML = html;
-
-      document.getElementById('rowPrintTotalOmset').style.display = '';
-      document.getElementById('rowPrintTotalBayar').style.display = '';
-      document.getElementById('rowPrintTotalHutang').style.display = '';
-
-      document.getElementById('printTotalOmsetVal').innerText = "Rp " + totalOm.toLocaleString('id-ID');
-      document.getElementById('printTotalBayarVal').innerText = "Rp " + totalByr.toLocaleString('id-ID');
-      document.getElementById('printTotalHutangVal').innerText = "Rp " + totalHtg.toLocaleString('id-ID');
-
-      const now = new Date();
-      document.getElementById('printTglCetak').innerText = now.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-      const namaPim = (document.getElementById('inputNamaPimpinan').value || "").trim() || "Pimpinan / Kasir";
-      document.getElementById('printNamaPimpinan').innerText = namaPim;
-
-      const ttdCanvas = document.getElementById('canvasTtd');
-      const ttdContainer = document.getElementById('printAreaTtdImg');
-      ttdContainer.innerHTML = '';
-      if (ttdCanvas) {
-        const dataUrl = ttdCanvas.toDataURL();
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.className = "h-16 object-contain";
-        ttdContainer.appendChild(img);
-      }
-
+      siapkanDataCetak("REKAPITULASI HARIAN TRANSAKSI", `Tanggal: ${found.tanggal}`, htmlRows, totalOmset, totalBayar, totalHutang);
       window.print();
     }
 
@@ -2616,74 +2571,44 @@
       const found = filteredDataRekapCache.bulanan.find(b => b.bulan === bulan);
       if (!found) return;
 
-      document.getElementById('printJudulLaporan').innerText = "LAPORAN REKAPITULASI BULANAN";
-      document.getElementById('printInfoWaktu').innerText = `Bulan: ${found.bulan}`;
+      let totalOmset = 0;
+      let totalBayar = 0;
+      let totalHutang = 0;
 
-      let html = `
-        <table class="w-full text-left text-xs border-collapse border border-black mt-3">
+      let htmlRows = `
+        <table class="w-full text-left border-collapse text-xs border border-black mt-2">
           <thead>
-            <tr class="bg-slate-200 border-b border-black">
-              <th class="p-2 border-r border-black">No</th>
-              <th class="p-2 border-r border-black">Tanggal</th>
-              <th class="p-2 border-r border-black">Pembeli</th>
-              <th class="p-2 border-r border-black">Rincian Item</th>
-              <th class="p-2 border-r border-black text-right">Total (Rp)</th>
-              <th class="p-2 border-r border-black text-right">Bayar (Rp)</th>
-              <th class="p-2 text-right">Kembali / Utang (Rp)</th>
+            <tr class="bg-slate-200 border-b border-black text-[11px]">
+              <th class="py-2 px-2 border-r border-black">Tanggal</th>
+              <th class="py-2 px-2 border-r border-black">Pembeli</th>
+              <th class="py-2 px-2 border-r border-black">Rincian Item</th>
+              <th class="py-2 px-2 border-r border-black text-right">Total</th>
+              <th class="py-2 px-2 border-r border-black text-right">Bayar</th>
+              <th class="py-2 px-2 text-right">Hutang</th>
             </tr>
           </thead>
           <tbody>
       `;
 
-      let totalOm = 0;
-      let totalByr = 0;
-      let totalHtg = 0;
+      found.listTransaksi.forEach(t => {
+        totalOmset += t.total;
+        totalBayar += t.bayar;
+        if (t.kembali < 0) totalHutang += Math.abs(t.kembali);
 
-      found.listTransaksi.forEach((t, i) => {
-        totalOm += t.total;
-        totalByr += t.bayar;
-        if (t.kembali < 0) totalHtg += Math.abs(t.kembali);
-
-        html += `
+        htmlRows += `
           <tr class="border-b border-black">
-            <td class="p-2 border-r border-black text-center">${i + 1}</td>
-            <td class="p-2 border-r border-black font-mono">${t.tanggal}</td>
-            <td class="p-2 border-r border-black font-bold">${t.pembeli || 'Umum'}</td>
-            <td class="p-2 border-r border-black">${t.items}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.total.toLocaleString('id-ID')}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.bayar.toLocaleString('id-ID')}</td>
-            <td class="p-2 text-right font-mono">${t.kembali.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black">${t.tanggal}</td>
+            <td class="py-2 px-2 border-r border-black font-bold">${t.pembeli || 'Umum'}</td>
+            <td class="py-2 px-2 border-r border-black">${t.items}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.total.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.bayar.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 text-right font-mono">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
           </tr>
         `;
       });
+      htmlRows += `</tbody></table>`;
 
-      html += `</tbody></table>`;
-      document.getElementById('printKontenTabel').innerHTML = html;
-
-      document.getElementById('rowPrintTotalOmset').style.display = '';
-      document.getElementById('rowPrintTotalBayar').style.display = '';
-      document.getElementById('rowPrintTotalHutang').style.display = '';
-
-      document.getElementById('printTotalOmsetVal').innerText = "Rp " + totalOm.toLocaleString('id-ID');
-      document.getElementById('printTotalBayarVal').innerText = "Rp " + totalByr.toLocaleString('id-ID');
-      document.getElementById('printTotalHutangVal').innerText = "Rp " + totalHtg.toLocaleString('id-ID');
-
-      const now = new Date();
-      document.getElementById('printTglCetak').innerText = now.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-      const namaPim = (document.getElementById('inputNamaPimpinan').value || "").trim() || "Pimpinan / Kasir";
-      document.getElementById('printNamaPimpinan').innerText = namaPim;
-
-      const ttdCanvas = document.getElementById('canvasTtd');
-      const ttdContainer = document.getElementById('printAreaTtdImg');
-      ttdContainer.innerHTML = '';
-      if (ttdCanvas) {
-        const dataUrl = ttdCanvas.toDataURL();
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.className = "h-16 object-contain";
-        ttdContainer.appendChild(img);
-      }
-
+      siapkanDataCetak("REKAPITULASI BULANAN TRANSAKSI", `Bulan: ${found.bulan}`, htmlRows, totalOmset, totalBayar, totalHutang);
       window.print();
     }
 
@@ -2691,72 +2616,42 @@
       const found = filteredDataRekapCache.rekapPembeliBulanan.find(p => p.pembeli === pembeliNama);
       if (!found) return;
 
-      document.getElementById('printJudulLaporan').innerText = "LAPORAN REKAPITULASI PER PEMBELI";
-      document.getElementById('printInfoWaktu').innerText = `Nama: ${found.pembeli} (Bulan: ${found.bulan})`;
+      let totalOmset = 0;
+      let totalBayar = 0;
+      let totalHutang = 0;
 
-      let html = `
-        <table class="w-full text-left text-xs border-collapse border border-black mt-3">
+      let htmlRows = `
+        <table class="w-full text-left border-collapse text-xs border border-black mt-2">
           <thead>
-            <tr class="bg-slate-200 border-b border-black">
-              <th class="p-2 border-r border-black">No</th>
-              <th class="p-2 border-r border-black">Tanggal</th>
-              <th class="p-2 border-r border-black">Rincian Item</th>
-              <th class="p-2 border-r border-black text-right">Total (Rp)</th>
-              <th class="p-2 border-r border-black text-right">Bayar (Rp)</th>
-              <th class="p-2 text-right">Kembali / Utang (Rp)</th>
+            <tr class="bg-slate-200 border-b border-black text-[11px]">
+              <th class="py-2 px-2 border-r border-black">Tanggal</th>
+              <th class="py-2 px-2 border-r border-black">Rincian Item</th>
+              <th class="py-2 px-2 border-r border-black text-right">Total</th>
+              <th class="py-2 px-2 border-r border-black text-right">Bayar</th>
+              <th class="py-2 px-2 text-right">Hutang</th>
             </tr>
           </thead>
           <tbody>
       `;
 
-      let totalOm = 0;
-      let totalByr = 0;
-      let totalHtg = 0;
+      found.listTransaksi.forEach(t => {
+        totalOmset += t.total;
+        totalBayar += t.bayar;
+        if (t.kembali < 0) totalHutang += Math.abs(t.kembali);
 
-      found.listTransaksi.forEach((t, i) => {
-        totalOm += t.total;
-        totalByr += t.bayar;
-        if (t.kembali < 0) totalHtg += Math.abs(t.kembali);
-
-        html += `
+        htmlRows += `
           <tr class="border-b border-black">
-            <td class="p-2 border-r border-black text-center">${i + 1}</td>
-            <td class="p-2 border-r border-black font-mono">${t.tanggal}</td>
-            <td class="p-2 border-r border-black">${t.items}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.total.toLocaleString('id-ID')}</td>
-            <td class="p-2 border-r border-black text-right font-mono">${t.bayar.toLocaleString('id-ID')}</td>
-            <td class="p-2 text-right font-mono">${t.kembali.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black">${t.tanggal}</td>
+            <td class="py-2 px-2 border-r border-black">${t.items}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.total.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 border-r border-black text-right font-mono">Rp ${t.bayar.toLocaleString('id-ID')}</td>
+            <td class="py-2 px-2 text-right font-mono">${t.kembali < 0 ? 'Rp ' + Math.abs(t.kembali).toLocaleString('id-ID') : 'Rp 0'}</td>
           </tr>
         `;
       });
+      htmlRows += `</tbody></table>`;
 
-      html += `</tbody></table>`;
-      document.getElementById('printKontenTabel').innerHTML = html;
-
-      document.getElementById('rowPrintTotalOmset').style.display = '';
-      document.getElementById('rowPrintTotalBayar').style.display = '';
-      document.getElementById('rowPrintTotalHutang').style.display = '';
-
-      document.getElementById('printTotalOmsetVal').innerText = "Rp " + totalOm.toLocaleString('id-ID');
-      document.getElementById('printTotalBayarVal').innerText = "Rp " + totalByr.toLocaleString('id-ID');
-      document.getElementById('printTotalHutangVal').innerText = "Rp " + totalHtg.toLocaleString('id-ID');
-
-      const now = new Date();
-      document.getElementById('printTglCetak').innerText = now.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-      const namaPim = (document.getElementById('inputNamaPimpinan').value || "").trim() || "Pimpinan / Kasir";
-      document.getElementById('printNamaPimpinan').innerText = namaPim;
-
-      const ttdCanvas = document.getElementById('canvasTtd');
-      const ttdContainer = document.getElementById('printAreaTtdImg');
-      ttdContainer.innerHTML = '';
-      if (ttdCanvas) {
-        const dataUrl = ttdCanvas.toDataURL();
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.className = "h-16 object-contain";
-        ttdContainer.appendChild(img);
-      }
-
+      siapkanDataCetak("REKAPITULASI TRANSAKSI PER PELANGGAN", `Nama Pelanggan: ${found.pembeli}`, htmlRows, totalOmset, totalBayar, totalHutang);
       window.print();
     }
   </script>
